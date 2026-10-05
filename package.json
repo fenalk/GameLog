@@ -1,0 +1,25 @@
+{
+  "name": "gamelog",
+  "version": "1.0.0",
+  "description": "Desenvolvimento de Software apoiado por IA com uso de Spec-Driven Development (SDD)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fenalk/GameLog.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fenalk/GameLog/issues"
+  },
+  "homepage": "https://github.com/fenalk/GameLog#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
