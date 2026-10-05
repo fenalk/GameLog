@@ -117,3 +117,7 @@ A implementação inicial do GameLog utilizará:
 
 As tecnologias específicas do frontend, banco de dados e demais componentes poderão ser definidas nas especificações de arquitetura e implementação.
 
+# Prompt
+Ao final de cada sessão de conversa com agentes de IA, deverá ser criada uma documentação contendo o diálogo completo. O arquivo deverá seguir o formato AAAA-MM-DD-HHMM-<ferramenta>.md e ser armazenado no diretório Prompts/sessoes/.
+
+Dessa forma, será mantido um histórico das conversas realizadas com os agentes de IA durante o desenvolvimento do projeto.
