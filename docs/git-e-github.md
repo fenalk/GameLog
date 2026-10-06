@@ -70,33 +70,48 @@ chore(db): adiciona migration de gêneros
 
 ## 4. Proteção da branch principal (`main`)
 
-Configuração de proteção pretendida para a `main`:
+Proteção **aplicada** no repositório (o repositório é público; em repositórios privados a
+proteção de branch exige GitHub Pro):
 
-- exigir pull request antes do merge (sem pushes diretos);
-- exigir 1 aprovação de revisão e nova aprovação após novos commits;
-- exigir que os status checks do CI (`Lint, tipos, testes e build`) estejam verdes;
+- exigir pull request antes do merge (sem pushes diretos), inclusive para administradores;
+- exigir que os status checks do CI (`Lint, tipos, testes e build`) estejam verdes, com a
+  branch atualizada em relação à `main`;
 - exigir resolução de todas as conversas;
 - impedir force push e exclusão da branch;
-- exigir histórico linear (aplicado junto com o squash merge).
+- exigir histórico linear (combinado com o squash merge).
 
-> **Situação atual:** o repositório é privado no plano **GitHub Free**, que não oferece proteção
-> de branch nem rulesets (a API responde `403 — Upgrade to GitHub Pro or make this repository
-> public to enable this feature`). Até que o repositório seja público ou o plano seja Pro,
-> a convenção vale como acordo da dupla. Com a permissão disponível, aplicar com o comando
-> abaixo (e manter a contagem de aprovações em `1` quando houver dois colaboradores).
+> **Aprovações:** a contagem está em `0` porque hoje há um único colaborador (`fenalk`) e o
+> GitHub não permite aprovar o próprio pull request. Quando o segundo integrante da dupla for
+> adicionado como colaborador, elevar para `1` (mantendo "descartar aprovações antigas").
+>
+> **Repositório privado:** se a visibilidade voltar a ser privada, a proteção precisa ser
+> reconfigurada quando o plano permitir (GitHub Pro) — a API responde `403 — Upgrade to GitHub
+> Pro or make this repository public to enable this feature`.
 
-Aplicação via GitHub CLI:
+Aplicação via GitHub CLI (payload efetivamente usado):
 
 ```bash
 gh api -X PUT repos/fenalk/GameLog/branches/main/protection \
   -H 'Accept: application/vnd.github+json' \
-  -f 'required_status_checks[strict]=true' \
-  -f 'required_status_checks[contexts][]=Lint, tipos, testes e build' \
-  -f 'enforce_admins=true' \
-  -f 'required_pull_request_reviews[required_approving_review_count]=1' \
-  -f 'restrictions=' \
-  -F 'allow_force_pushes=false' \
-  -F 'allow_deletions=false'
+  --input - <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": ["Lint, tipos, testes e build"]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0
+  },
+  "restrictions": null,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "required_conversation_resolution": true
+}
+JSON
 ```
 
 > Observação: a proteção de branch é configurada no GitHub (não é versionada junto com o
