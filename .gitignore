@@ -1,0 +1,24 @@
+# Dependências
+node_modules/
+
+# Artefatos de build
+dist/
+.vite/
+
+# Código gerado (Prisma Client)
+src/backend/src/generated/
+
+# Configuração local e segredos
+.env
+.env.local
+.env.*.local
+
+# Testes
+coverage/
+playwright-report/
+test-results/
+
+# Logs e arquivos de sistema
+*.log
+npm-debug.log*
+.DS_Store

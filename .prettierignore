@@ -1,0 +1,17 @@
+# Dependências e artefatos gerados
+node_modules/
+dist/
+coverage/
+src/backend/src/generated/
+playwright-report/
+test-results/
+
+# Documentação e registros escritos manualmente
+**/*.md
+docs/
+SPEC/
+.sdd/
+prompts/
+
+# Arquivo gerenciado pelo npm
+package-lock.json

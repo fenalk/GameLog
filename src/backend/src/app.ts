@@ -1,0 +1,51 @@
+import { API_PREFIX } from '@gamelog/shared';
+import cors from '@fastify/cors';
+import Fastify from 'fastify';
+import {
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from 'fastify-type-provider-zod';
+
+import { env } from './config/env.js';
+import { healthRoutes } from './modules/health/health.routes.js';
+import { registerErrorHandler } from './plugins/error-handler.js';
+import { registerOpenApi } from './plugins/swagger.js';
+
+/**
+ * Cria a aplicação Fastify com plugins transversais, tratamento de erros e os módulos
+ * da API REST. Não chama `listen` — o servidor HTTP é iniciado em `server.ts` e os
+ * testes de integração usam a instância diretamente.
+ */
+export async function buildApp() {
+  const app = Fastify({
+    logger: {
+      level: env.LOG_LEVEL,
+      ...(env.NODE_ENV === 'development'
+        ? {
+            transport: {
+              target: 'pino-pretty',
+              options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
+            },
+          }
+        : {}),
+    },
+  }).withTypeProvider<ZodTypeProvider>();
+
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+
+  registerErrorHandler(app);
+
+  await app.register(cors, { origin: env.CORS_ORIGIN });
+
+  if (env.OPENAPI_ENABLED) {
+    await registerOpenApi(app);
+  }
+
+  await app.register(healthRoutes, { prefix: API_PREFIX });
+
+  return app;
+}
+
+export type App = Awaited<ReturnType<typeof buildApp>>;
