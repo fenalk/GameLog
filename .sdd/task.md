@@ -93,19 +93,19 @@ Entrega a base de jogos consumida pelas etapas seguintes.
 - [ ] `T2.06` Testar F4
 
 ### F5 — Gerenciamento de gênero
-- [ ] `T2.07` Escrever a SPEC de F5
-- [ ] `T2.08` Implementar F5
-- [ ] `T2.09` Testar F5
+- [x] `T2.07` Escrever a SPEC de F5
+- [x] `T2.08` Implementar F5
+- [x] `T2.09` Testar F5
 
 ### F6 — Gerenciamento de plataforma
-- [ ] `T2.10` Escrever a SPEC de F6
-- [ ] `T2.11` Implementar F6
-- [ ] `T2.12` Testar F6
+- [x] `T2.10` Escrever a SPEC de F6
+- [x] `T2.11` Implementar F6
+- [x] `T2.12` Testar F6
 
 ### F7 — Gerenciamento de desenvolvedoras
-- [ ] `T2.13` Escrever a SPEC de F7
-- [ ] `T2.14` Implementar F7
-- [ ] `T2.15` Testar F7
+- [x] `T2.13` Escrever a SPEC de F7
+- [x] `T2.14` Implementar F7
+- [x] `T2.15` Testar F7
 
 ---
 
