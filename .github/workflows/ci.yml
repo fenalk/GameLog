@@ -11,6 +11,9 @@ concurrency:
 
 env:
   NODE_VERSION: '24'
+  # Valores de teste para os segredos exigidos pela API (RN-F1-13); não são segredos reais.
+  JWT_ACCESS_SECRET: ci-access-secret-0123456789-0123456789
+  JWT_REFRESH_SECRET: ci-refresh-secret-0123456789-0123456789
   DATABASE_URL: postgresql://gamelog:gamelog@localhost:5432/gamelog?schema=public
 
 jobs:
