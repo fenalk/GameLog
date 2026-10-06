@@ -51,7 +51,7 @@ Base técnica e arquitetural que sustenta todas as demais etapas.
 - [x] `T0.08` Configurar o padrão da API REST (esqueleto do servidor e endpoint de saúde)
 - [x] `T0.09` Configurar o esqueleto do frontend e o roteamento base
 - [x] `T0.10` Configurar Git/GitHub (convenções de commit, branches, PRs e proteção da branch principal) — convenções em `docs/git-e-github.md` e proteção da `main` aplicada (repositório tornado público; exigir PR, CI verde, histórico linear e conversas resolvidas)
-- [~] `T0.11` Configurar a integração contínua (lint, type-check, testes e build por PR) — workflow criado em `.github/workflows/ci.yml`; verde a confirmar no primeiro PR
+- [x] `T0.11` Configurar a integração contínua (lint, type-check, testes e build por PR) — workflow em `.github/workflows/ci.yml`, verde no PR #1 (lint, formatação, tipos, build, migrations, testes de integração e e2e)
 - [x] `T0.12` Criar o modelo/template de SPEC e o padrão de registro de sessões em `prompts/sessoes/`
 
 ---
