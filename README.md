@@ -40,7 +40,7 @@ cp src/backend/.env.example src/backend/.env
 # diferentes entre si) e as credenciais ADMIN_* do administrador inicial
 docker compose up -d db              # PostgreSQL em localhost:5432
 npm run db:deploy                    # aplica as migrations do Prisma
-npm run db:seed                      # cria o administrador inicial (idempotente)
+npm run db:seed                      # cria o catálogo de exemplo e o administrador inicial (idempotente)
 npm run dev                          # API em :3000 e frontend em :5173
 ```
 
@@ -50,6 +50,7 @@ npm run dev                          # API em :3000 e frontend em :5173
 - Frontend: `http://localhost:5173` (proxy `/api` → backend)
 - Cadastro, login e conta: `http://localhost:5173/cadastro`, `http://localhost:5173/entrar` e `http://localhost:5173/conta`
 - Perfil público: `http://localhost:5173/jogadores/<username>`
+- Catálogo de jogos: `http://localhost:5173/jogos` e detalhe em `http://localhost:5173/jogos/<slug>`
 
 ## Scripts
 
@@ -63,7 +64,7 @@ npm run dev                          # API em :3000 e frontend em :5173
 | `npm test` / `npm run test:watch` | Testes unitários e de integração (Vitest + Supertest) |
 | `npm run test:e2e` | Testes end-to-end (Playwright) |
 | `npm run db:migrate` / `db:deploy` | Cria/desenvolve migrations / aplica migrations |
-| `npm run db:seed` | Cria o administrador inicial a partir de `ADMIN_EMAIL`, `ADMIN_USERNAME` e `ADMIN_PASSWORD` (idempotente) |
+| `npm run db:seed` | Cria o catálogo de exemplo (SPEC F3, ≥ 20 jogos fictícios, idempotente, fora de produção) e o administrador inicial a partir de `ADMIN_EMAIL`, `ADMIN_USERNAME` e `ADMIN_PASSWORD` (idempotente) |
 | `npm run db:reset` / `db:studio` | Recria o banco / abre o Prisma Studio |
 
 ## Testes

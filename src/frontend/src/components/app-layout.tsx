@@ -24,9 +24,17 @@ export function AppLayout() {
     <div className="flex min-h-svh flex-col">
       <header className="border-b">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-6">
-          <Link to="/" className="font-semibold tracking-tight">
-            GameLog
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/" className="font-semibold tracking-tight">
+              GameLog
+            </Link>
+            <Link
+              to="/jogos"
+              className="text-sm text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              Catálogo
+            </Link>
+          </div>
 
           <nav aria-label="Sessão" className="flex items-center gap-4 text-sm">
             {status === 'loading' ? (

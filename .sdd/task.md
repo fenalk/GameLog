@@ -83,9 +83,9 @@ Funcionalidades: **F3** (consulta e pesquisa), **F4** (gerenciamento do catálog
 Entrega a base de jogos consumida pelas etapas seguintes.
 
 ### F3 — Consulta e pesquisa de jogos
-- [ ] `T2.01` Escrever a SPEC de F3
-- [ ] `T2.02` Implementar F3
-- [ ] `T2.03` Testar F3
+- [x] `T2.01` Escrever a SPEC de F3
+- [x] `T2.02` Implementar F3
+- [x] `T2.03` Testar F3
 
 ### F4 — Gerenciamento do catálogo de jogos
 - [ ] `T2.04` Escrever a SPEC de F4
