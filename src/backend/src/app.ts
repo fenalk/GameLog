@@ -17,6 +17,7 @@ import { platformsRoutes } from './modules/catalog/platforms.routes.js';
 import { gameLogsRoutes } from './modules/game-logs/game-logs.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { profileRoutes } from './modules/profile/profile.routes.js';
+import { reviewsRoutes } from './modules/reviews/reviews.routes.js';
 import { attemptLimiterPlugin } from './plugins/attempt-limiter.js';
 import { authPlugin } from './plugins/auth.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
@@ -64,6 +65,7 @@ export async function buildApp() {
   await app.register(platformsRoutes, { prefix: API_PREFIX });
   await app.register(developersRoutes, { prefix: API_PREFIX });
   await app.register(gameLogsRoutes, { prefix: API_PREFIX });
+  await app.register(reviewsRoutes, { prefix: API_PREFIX });
 
   return app;
 }
