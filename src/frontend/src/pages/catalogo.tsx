@@ -162,7 +162,7 @@ export function CatalogoPage() {
     retry: 1,
   });
 
-  function toggleFilter(key: 'genre' | 'platform', slug: string, checked: boolean) {
+  function toggleFilter(key: 'genre' | 'platform' | 'developer', slug: string, checked: boolean) {
     updateParams((params) => {
       const values = params.getAll(key).filter((value) => value !== slug);
 
@@ -196,6 +196,7 @@ export function CatalogoPage() {
     updateParams((params) => {
       params.delete('genre');
       params.delete('platform');
+      params.delete('developer');
       params.delete('releaseYearFrom');
       params.delete('releaseYearTo');
       params.delete('minRating');
@@ -222,7 +223,7 @@ export function CatalogoPage() {
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Catálogo</h1>
         <p className="text-sm text-muted-foreground">
-          Pesquise por título e refine por gênero, plataforma, ano e nota.
+          Pesquise por título e refine por gênero, plataforma, desenvolvedora, ano e nota.
         </p>
       </header>
 
@@ -367,6 +368,22 @@ export function CatalogoPage() {
                     label={platform.name}
                     checked={state.platforms.includes(platform.slug)}
                     onChange={(checked) => toggleFilter('platform', platform.slug, checked)}
+                  />
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="flex flex-col gap-2">
+              <legend className="text-sm font-medium">Desenvolvedoras</legend>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {optionsQuery.data.developers.map((developer) => (
+                  <FilterCheckbox
+                    key={developer.slug}
+                    name="desenvolvedora"
+                    value={developer.slug}
+                    label={developer.name}
+                    checked={state.developers.includes(developer.slug)}
+                    onChange={(checked) => toggleFilter('developer', developer.slug, checked)}
                   />
                 ))}
               </div>

@@ -1,21 +1,235 @@
-import { publicProfilePath, type PublicProfile } from '@gamelog/shared';
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router';
+import {
+  GAME_LOG_STATUSES,
+  gameLogStatusLabel,
+  publicProfilePath,
+  type GameLogEntry,
+  type PublicProfile,
+} from '@gamelog/shared';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router';
 
+import { DiaryEmpty, DiaryError, DiaryItem, DiarySkeletons } from '@/components/game-log-list';
+import { GameLogFormDialog } from '@/components/game-log-form';
+import { ConfirmDialog } from '@/components/modal';
 import { NotFound } from '@/components/not-found';
+import { Pagination } from '@/components/pagination';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { ApiError, apiRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
+import { fetchGameDetail } from '@/lib/catalog';
 import { formMessageFor } from '@/lib/forms';
+import {
+  deleteMyGameLog,
+  diaryRequestFromState,
+  diaryStateFromSearch,
+  fetchPublicDiary,
+} from '@/lib/game-logs';
 import { formatMemberSince } from '@/lib/profile';
 
-/** Seções entregues pelas SPECs posteriores (F8–F11): reservadas, ainda sem conteúdo. */
+/** Seções entregues pelas SPECs posteriores (F9–F11): reservadas, ainda sem conteúdo. */
 const RESERVED_SECTIONS = [
-  { label: 'Diário', spec: 'F8' },
   { label: 'Avaliações', spec: 'F9' },
   { label: 'Resenhas', spec: 'F10' },
   { label: 'Listas', spec: 'F11' },
 ] as const;
+
+/**
+ * Aba Diário do perfil (seção 4 da SPEC F8): lista o diário público com filtro por status
+ * e paginação sincronizados na URL, estados de carregamento/vazio/erro e as ações de
+ * editar/remover para o dono do perfil. Os dados vêm de `GET /users/:username/games`,
+ * que é público e serve tanto o dono quanto os visitantes.
+ */
+function DiarySection({ username, isOwner }: { username: string; isOwner: boolean }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const state = diaryStateFromSearch(searchParams);
+  const request = diaryRequestFromState(state);
+
+  const [editing, setEditing] = useState<GameLogEntry | null>(null);
+  const [removing, setRemoving] = useState<GameLogEntry | null>(null);
+  const [removeError, setRemoveError] = useState<string | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+
+  const query = useQuery({
+    queryKey: ['diary', 'list', 'public', username, request],
+    queryFn: () => fetchPublicDiary(username, request),
+    placeholderData: keepPreviousData,
+    retry: 1,
+  });
+
+  // As plataformas do formulário vêm do detalhe do jogo, carregado só ao editar.
+  const platformsQuery = useQuery({
+    queryKey: ['catalog', 'game', editing?.game.slug],
+    queryFn: () => fetchGameDetail(editing?.game.slug ?? ''),
+    enabled: editing !== null,
+    retry: 1,
+  });
+
+  const updateParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      setSearchParams(
+        (current) => {
+          const params = new URLSearchParams(current);
+          mutate(params);
+          return params;
+        },
+        { replace: true, flushSync: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  function selectStatus(value: string) {
+    updateParams((params) => {
+      if (value.length > 0) {
+        params.set('status', value);
+      } else {
+        params.delete('status');
+      }
+
+      params.delete('page');
+    });
+  }
+
+  function goToPage(page: number) {
+    updateParams((params) => {
+      if (page > 1) {
+        params.set('page', String(page));
+      } else {
+        params.delete('page');
+      }
+    });
+  }
+
+  function handleSaved() {
+    setEditing(null);
+    void queryClient.invalidateQueries({ queryKey: ['diary'] });
+  }
+
+  async function handleRemove() {
+    if (!removing) {
+      return;
+    }
+
+    setBusy(true);
+    setRemoveError(undefined);
+
+    try {
+      await deleteMyGameLog(removing.game.slug);
+      setRemoving(null);
+      void queryClient.invalidateQueries({ queryKey: ['diary'] });
+    } catch (error) {
+      setRemoveError(formMessageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const page = query.data;
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-medium">Diário</h2>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="filtro-status-diario" className="text-sm font-medium">
+            Status
+          </label>
+          <select
+            id="filtro-status-diario"
+            name="status"
+            value={state.statuses[0] ?? ''}
+            onChange={(event) => selectStatus(event.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            <option value="">Todos os status</option>
+            {GAME_LOG_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {gameLogStatusLabel(status)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {query.isPending ? <DiarySkeletons /> : null}
+
+      {query.isError ? (
+        <DiaryError
+          message={formMessageFor(query.error)}
+          onRetry={() => void query.refetch()}
+          retrying={query.isFetching}
+        />
+      ) : null}
+
+      {page ? (
+        page.data.length === 0 ? (
+          state.statuses.length > 0 ? (
+            <p
+              data-testid="diario-vazio-filtro"
+              className="rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground"
+            >
+              Nenhum registro com este status
+            </p>
+          ) : (
+            <DiaryEmpty isOwner={isOwner} />
+          )
+        ) : (
+          <>
+            <ul data-testid="diario-lista" className="flex flex-col gap-3">
+              {page.data.map((entry) => (
+                <DiaryItem
+                  key={entry.id}
+                  entry={entry}
+                  isOwner={isOwner}
+                  onEdit={setEditing}
+                  onRemove={(item) => {
+                    setRemoveError(undefined);
+                    setRemoving(item);
+                  }}
+                />
+              ))}
+            </ul>
+
+            <Pagination
+              page={page.meta.page}
+              totalPages={page.meta.totalPages}
+              onPageChange={goToPage}
+            />
+          </>
+        )
+      ) : null}
+
+      {editing ? (
+        <GameLogFormDialog
+          game={{ slug: editing.game.slug, title: editing.game.title }}
+          entry={editing}
+          platforms={platformsQuery.data?.platforms ?? []}
+          platformsPending={platformsQuery.isPending}
+          onClose={() => setEditing(null)}
+          onSaved={handleSaved}
+        />
+      ) : null}
+
+      {removing ? (
+        <ConfirmDialog
+          title="Remover do diário"
+          message={`Remover "${removing.game.title}" do seu diário? Esta ação não pode ser desfeita.`}
+          confirmLabel="Remover"
+          busy={busy}
+          error={removeError}
+          onConfirm={() => void handleRemove()}
+          onCancel={() => {
+            setRemoving(null);
+            setRemoveError(undefined);
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
 
 type ProfileState =
   | { status: 'loading' }
@@ -121,6 +335,14 @@ function PublicProfileView({ username }: { username: string }) {
       </header>
 
       <nav aria-label="Seções do perfil" className="flex flex-wrap gap-2">
+        <span
+          data-testid="aba-diario"
+          aria-current="page"
+          className="rounded-full border border-foreground/30 bg-accent px-3 py-1 text-sm font-medium"
+        >
+          Diário
+        </span>
+
         {RESERVED_SECTIONS.map((section) => (
           <span
             key={section.label}
@@ -131,6 +353,8 @@ function PublicProfileView({ username }: { username: string }) {
           </span>
         ))}
       </nav>
+
+      <DiarySection username={profile.username} isOwner={isOwnProfile} />
     </main>
   );
 }

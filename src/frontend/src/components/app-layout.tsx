@@ -60,6 +60,31 @@ export function AppLayout() {
 
             {status === 'authenticated' && user ? (
               <>
+                {user.role === 'ADMIN' ? (
+                  <>
+                    <Link
+                      to="/admin/generos"
+                      data-testid="menu-admin-generos"
+                      className="rounded-md px-2 py-1 transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                    >
+                      Gêneros
+                    </Link>
+                    <Link
+                      to="/admin/plataformas"
+                      data-testid="menu-admin-plataformas"
+                      className="rounded-md px-2 py-1 transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                    >
+                      Plataformas
+                    </Link>
+                    <Link
+                      to="/admin/desenvolvedoras"
+                      data-testid="menu-admin-desenvolvedoras"
+                      className="rounded-md px-2 py-1 transition-colors outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40"
+                    >
+                      Desenvolvedoras
+                    </Link>
+                  </>
+                ) : null}
                 <Link
                   to="/conta"
                   data-testid="usuario-atual"

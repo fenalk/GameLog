@@ -6,6 +6,7 @@
 // Etapa 2 (Catálogo de jogos — F3): jogos e taxonomias com as relações N:N (SPEC F3,
 // seção 1). Os campos exclusivos de F4–F7 serão acrescentados pelas migrations das
 // respectivas funcionalidades.
+// Etapa 3 (Atividade do jogador — F8): diário de jogos jogados (SPEC F8, seção 1).
 
 generator client {
   provider = "prisma-client"
@@ -27,6 +28,16 @@ enum UserStatus {
   SUSPENDED
 }
 
+/// Classificação do registro no diário (seção 1 da SPEC F8). É apenas uma classificação:
+/// não há transições obrigatórias nem acoplamento com as datas (RN-F8-03).
+enum GameLogStatus {
+  PLAYING
+  COMPLETED
+  ON_HOLD
+  DROPPED
+  BACKLOG
+}
+
 /// Conta de usuário (seção 3 da SPEC F1). `username` e `email` são persistidos já
 /// normalizados (minúsculos, sem espaços) e comparados de forma única. Os campos de
 /// perfil são nulos por padrão (RN-F2-02): `displayName` nulo é exibido como o
@@ -44,6 +55,7 @@ model User {
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
   refreshTokens RefreshToken[]
+  gameLogs      GameLog[]
 
   @@map("users")
 }
@@ -80,37 +92,50 @@ model Game {
   genres        GameGenre[]
   platforms     GamePlatform[]
   developers    GameDeveloper[]
+  gameLogs      GameLog[]
 
   @@map("games")
 }
 
-/// Gênero (SPEC F3, seção 1; campos de gestão na F5). O `slug` é usado nos filtros e
-/// nas URLs.
+/// Gênero (SPEC F3, seção 1; gestão na F5). O `slug` é usado nos filtros e nas URLs;
+/// `name_normalized` garante unicidade sem diferenciar caixa/acentos (RN-F5-02).
 model Genre {
-  id    String      @id @default(uuid()) @db.Uuid
-  name  String      @db.VarChar(50)
-  slug  String      @unique @db.VarChar(60)
-  games GameGenre[]
+  id             String      @id @default(uuid()) @db.Uuid
+  name           String      @db.VarChar(50)
+  nameNormalized String      @unique @map("name_normalized") @db.VarChar(50)
+  slug           String      @unique @db.VarChar(60)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  games          GameGenre[]
 
   @@map("genres")
 }
 
-/// Plataforma (SPEC F3, seção 1; campos de gestão na F6).
+/// Plataforma (SPEC F3, seção 1; gestão na F6). O `slug` é usado nos filtros e nas URLs;
+/// `name_normalized` garante unicidade sem diferenciar caixa/acentos (RN-F6-02).
 model Platform {
-  id    String         @id @default(uuid()) @db.Uuid
-  name  String         @db.VarChar(60)
-  slug  String         @unique @db.VarChar(70)
-  games GamePlatform[]
+  id             String         @id @default(uuid()) @db.Uuid
+  name           String         @db.VarChar(60)
+  nameNormalized String         @unique @map("name_normalized") @db.VarChar(60)
+  slug           String         @unique @db.VarChar(70)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  games          GamePlatform[]
+  gameLogs       GameLog[]
 
   @@map("platforms")
 }
 
-/// Desenvolvedora (SPEC F3, seção 1; campos de gestão na F7).
+/// Desenvolvedora (SPEC F3, seção 1; gestão na F7). O `slug` é usado nos filtros e nas
+/// URLs; `name_normalized` garante unicidade sem diferenciar caixa/acentos (RN-F7-02).
 model Developer {
-  id    String          @id @default(uuid()) @db.Uuid
-  name  String          @db.VarChar(100)
-  slug  String          @unique @db.VarChar(110)
-  games GameDeveloper[]
+  id             String          @id @default(uuid()) @db.Uuid
+  name           String          @db.VarChar(100)
+  nameNormalized String          @unique @map("name_normalized") @db.VarChar(100)
+  slug           String          @unique @db.VarChar(110)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  games          GameDeveloper[]
 
   @@map("developers")
 }
@@ -149,4 +174,29 @@ model GameDeveloper {
   @@id([gameId, developerId])
   @@index([developerId])
   @@map("game_developers")
+}
+
+/// Registro do diário (seção 1 da SPEC F8): um único registro por par jogador↔jogo
+/// (RN-F8-02), com status, datas, tempo jogado e plataforma opcional. As cascatas
+/// (RN-F8-12) removem os registros quando a conta ou o jogo é excluído e apenas
+/// desvinculam a plataforma quando ela é excluída.
+model GameLog {
+  id              String        @id @default(uuid()) @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  gameId          String        @map("game_id") @db.Uuid
+  status          GameLogStatus
+  startedAt       DateTime?     @map("started_at") @db.Date
+  finishedAt      DateTime?     @map("finished_at") @db.Date
+  playtimeMinutes Int?          @map("playtime_minutes")
+  platformId      String?       @map("platform_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game            Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform        Platform?     @relation(fields: [platformId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, gameId])
+  @@index([userId, updatedAt])
+  @@index([gameId])
+  @@map("game_logs")
 }

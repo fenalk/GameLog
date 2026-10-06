@@ -1,3 +1,5 @@
+import { normalizeTaxonomyName } from '@gamelog/shared';
+
 import type { Game, PrismaClient } from '../../src/backend/src/generated/prisma/client.js';
 
 /**
@@ -12,10 +14,12 @@ export async function createGenre(
   prisma: PrismaClient,
   input: TestTaxonomyInput,
 ): Promise<{ id: string }> {
+  const data = { ...input, nameNormalized: normalizeTaxonomyName(input.name) };
+
   return prisma.genre.upsert({
     where: { slug: input.slug },
-    update: { name: input.name },
-    create: input,
+    update: data,
+    create: data,
     select: { id: true },
   });
 }
@@ -24,10 +28,12 @@ export async function createPlatform(
   prisma: PrismaClient,
   input: TestTaxonomyInput,
 ): Promise<{ id: string }> {
+  const data = { ...input, nameNormalized: normalizeTaxonomyName(input.name) };
+
   return prisma.platform.upsert({
     where: { slug: input.slug },
-    update: { name: input.name },
-    create: input,
+    update: data,
+    create: data,
     select: { id: true },
   });
 }
@@ -36,10 +42,12 @@ export async function createDeveloper(
   prisma: PrismaClient,
   input: TestTaxonomyInput,
 ): Promise<{ id: string }> {
+  const data = { ...input, nameNormalized: normalizeTaxonomyName(input.name) };
+
   return prisma.developer.upsert({
     where: { slug: input.slug },
-    update: { name: input.name },
-    create: input,
+    update: data,
+    create: data,
     select: { id: true },
   });
 }

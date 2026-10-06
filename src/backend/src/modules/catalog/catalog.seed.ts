@@ -1,3 +1,5 @@
+import { normalizeTaxonomyName } from '@gamelog/shared';
+
 import type { PrismaClient } from '../../generated/prisma/client.js';
 import { env } from '../../config/env.js';
 
@@ -5,6 +7,8 @@ import { env } from '../../config/env.js';
  * Seed de exemplo do catálogo (seção 1 da SPEC F3): jogos fictícios com gêneros,
  * plataformas e desenvolvedoras para o ambiente de desenvolvimento. É idempotente
  * (reexecutar não duplica nem sobrescreve edições) e nunca roda em produção (CA-F3-23).
+ * Os gêneros (SPEC F5, RN-F5-11), as plataformas (SPEC F6, RN-F6-11) e as
+ * desenvolvedoras (SPEC F7, RN-F7-11) gravam `name_normalized`.
  */
 
 type SeedTaxonomy = { name: string; slug: string };
@@ -368,19 +372,28 @@ async function createTaxonomies(prisma: PrismaClient): Promise<{
 }> {
   const genres = await ensureTaxonomy(
     (slug) => prisma.genre.findUnique({ where: { slug }, select: { id: true } }),
-    (item) => prisma.genre.create({ data: item }),
+    (item) =>
+      prisma.genre.create({
+        data: { ...item, nameNormalized: normalizeTaxonomyName(item.name) },
+      }),
     GENRES,
   );
 
   const platforms = await ensureTaxonomy(
     (slug) => prisma.platform.findUnique({ where: { slug }, select: { id: true } }),
-    (item) => prisma.platform.create({ data: item }),
+    (item) =>
+      prisma.platform.create({
+        data: { ...item, nameNormalized: normalizeTaxonomyName(item.name) },
+      }),
     PLATFORMS,
   );
 
   const developers = await ensureTaxonomy(
     (slug) => prisma.developer.findUnique({ where: { slug }, select: { id: true } }),
-    (item) => prisma.developer.create({ data: item }),
+    (item) =>
+      prisma.developer.create({
+        data: { ...item, nameNormalized: normalizeTaxonomyName(item.name) },
+      }),
     DEVELOPERS,
   );
 
