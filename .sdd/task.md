@@ -115,9 +115,9 @@ Funcionalidades: **F8** (registro de jogos jogados), **F9** (avaliação) e **F1
 Forma o histórico pessoal e as opiniões que sustentam as avaliações sociais.
 
 ### F8 — Registro de jogos jogados
-- [ ] `T3.01` Escrever a SPEC de F8
-- [ ] `T3.02` Implementar F8
-- [ ] `T3.03` Testar F8
+- [x] `T3.01` Escrever a SPEC de F8
+- [x] `T3.02` Implementar F8
+- [x] `T3.03` Testar F8
 
 ### F9 — Avaliação de jogos
 - [ ] `T3.04` Escrever a SPEC de F9
