@@ -79,10 +79,37 @@ e2e rodam contra o banco que aquele servidor estiver usando.
 
 # Ferramentas
 
-- **cloc** — contagem de linhas apenas de arquivos versionados, sem documentação nem dados; a
-  saída vai no README, com as linhas de teste separadas das demais.
+- **cloc** — contagem de linhas apenas de **arquivos versionados**: dependências, locks, build e
+  dados não contam, e a documentação fica de fora; a saída está em
+  [Estatísticas](#estatísticas), com as linhas de teste separadas das demais.
 - **Git/GitHub** — convenções de branches, commits e pull requests em
   [docs/git-e-github.md](docs/git-e-github.md).
+
+# Estatísticas
+
+Contagem com [cloc](https://github.com/AlDanial/cloc) (v2.11), considerando apenas **arquivos
+versionados** e a coluna `code` da ferramenta. **Dependências, locks, build e dados não contam**;
+documentação (`*.md` e `LICENSE`) fica de fora. As linhas de teste aparecem separadas das demais.
+
+| Escopo | Arquivos | Linhas de código |
+| --- | --- | --- |
+| API (`src/backend/`) | 33 | 2389 |
+| Frontend (`src/frontend/`) | 33 | 2824 |
+| Compartilhado (`packages/shared/`) | 8 | 407 |
+| Configuração e infraestrutura | 8 | 230 |
+| Testes (`tests/`) | 24 | 2021 |
+| **Total** | **106** | **7871** |
+
+Sem os testes, são **5850 linhas**. Para reproduzir:
+
+```bash
+# arquivos versionados, sem documentação, dependências, locks e dados
+git ls-files | grep -vE '\.md$|(^|/)package(-lock)?\.json$|(^|/)migration_lock\.toml$|^LICENSE$' > /tmp/arquivos.txt
+
+# total e recortes por escopo (ex.: testes)
+cloc --list-file=/tmp/arquivos.txt
+grep '^tests/' /tmp/arquivos.txt > /tmp/testes.txt && cloc --list-file=/tmp/testes.txt
+```
 
 # Modelo
 
