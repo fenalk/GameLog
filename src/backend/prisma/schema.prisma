@@ -2,8 +2,9 @@
 //
 // Etapa 0 (Fundação): este arquivo define apenas a base da camada de persistência.
 // Etapa 1 (Identidade e acesso — F1): usuários e refresh tokens (SPEC F1).
+// Etapa 1 (Identidade e acesso — F2): campos de perfil do usuário (SPEC F2).
 // Os demais modelos de domínio serão criados pelas migrations de cada funcionalidade
-// (F2–F15), a partir das SPECs correspondentes.
+// (F3–F15), a partir das SPECs correspondentes.
 
 generator client {
   provider = "prisma-client"
@@ -26,12 +27,17 @@ enum UserStatus {
 }
 
 /// Conta de usuário (seção 3 da SPEC F1). `username` e `email` são persistidos já
-/// normalizados (minúsculos, sem espaços) e comparados de forma única.
+/// normalizados (minúsculos, sem espaços) e comparados de forma única. Os campos de
+/// perfil são nulos por padrão (RN-F2-02): `displayName` nulo é exibido como o
+/// `username` e `bio`/`avatarUrl` nulos significam "não informado".
 model User {
   id            String         @id @default(uuid()) @db.Uuid
   username      String         @unique @db.VarChar(30)
   email         String         @unique @db.VarChar(254)
   passwordHash  String         @map("password_hash") @db.VarChar(255)
+  displayName   String?        @map("display_name") @db.VarChar(50)
+  bio           String?        @db.VarChar(300)
+  avatarUrl     String?        @map("avatar_url") @db.VarChar(500)
   role          Role           @default(PLAYER)
   status        UserStatus     @default(ACTIVE)
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)

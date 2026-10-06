@@ -76,8 +76,22 @@ export const apiErrors = {
     return new ApiException(409, code, message);
   },
 
-  rateLimited(retryAfterSeconds: number): ApiException {
-    return new ApiException(429, ERROR_CODES.rateLimited, 'Muitas tentativas de login', {
+  /** Senha atual incorreta nas operações sensíveis do perfil (RN-F2-05 a RN-F2-07). */
+  invalidCurrentPassword(): ApiException {
+    return new ApiException(400, ERROR_CODES.invalidCurrentPassword, 'Senha atual incorreta.');
+  },
+
+  /** O último administrador ativo não pode excluir a própria conta (RN-F2-07). */
+  lastAdmin(): ApiException {
+    return new ApiException(
+      409,
+      ERROR_CODES.lastAdmin,
+      'Não é possível excluir a conta do último administrador ativo.',
+    );
+  },
+
+  rateLimited(retryAfterSeconds: number, message = 'Muitas tentativas de login'): ApiException {
+    return new ApiException(429, ERROR_CODES.rateLimited, message, {
       headers: { 'retry-after': String(retryAfterSeconds) },
     });
   },

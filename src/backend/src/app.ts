@@ -11,6 +11,8 @@ import {
 import { env } from './config/env.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
+import { profileRoutes } from './modules/profile/profile.routes.js';
+import { attemptLimiterPlugin } from './plugins/attempt-limiter.js';
 import { authPlugin } from './plugins/auth.js';
 import { registerErrorHandler } from './plugins/error-handler.js';
 import { registerOpenApi } from './plugins/swagger.js';
@@ -43,6 +45,7 @@ export async function buildApp() {
   await app.register(cors, { origin: env.CORS_ORIGIN });
   await app.register(cookie);
   await app.register(authPlugin);
+  await app.register(attemptLimiterPlugin);
 
   if (env.OPENAPI_ENABLED) {
     await registerOpenApi(app);
@@ -50,6 +53,7 @@ export async function buildApp() {
 
   await app.register(healthRoutes, { prefix: API_PREFIX });
   await app.register(authRoutes, { prefix: API_PREFIX });
+  await app.register(profileRoutes, { prefix: API_PREFIX });
 
   return app;
 }

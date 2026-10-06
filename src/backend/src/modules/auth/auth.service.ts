@@ -8,6 +8,7 @@ import type { User } from '../../generated/prisma/client.js';
 import { apiErrors } from '../../lib/api-error.js';
 import { fakePasswordHash, hashPassword, verifyPassword } from '../../lib/password.js';
 import { prisma } from '../../lib/prisma.js';
+import { isUniqueViolation } from '../../lib/prisma-errors.js';
 import {
   hashRefreshTokenJti,
   signAccessToken,
@@ -33,7 +34,7 @@ function toPublicUser(user: User): PublicUser {
 }
 
 /** Emite o par de tokens e persiste o hash do `jti` do refresh (RN-F1-09). */
-async function issueSession(user: User): Promise<IssuedSession> {
+export async function issueSession(user: User): Promise<IssuedSession> {
   const accessToken = signAccessToken(user.id);
   const refresh = signRefreshToken(user.id);
 
@@ -46,16 +47,6 @@ async function issueSession(user: User): Promise<IssuedSession> {
   });
 
   return { user: toPublicUser(user), accessToken, refreshToken: refresh.token };
-}
-
-function isUniqueViolation(error: unknown, field: 'username' | 'email'): boolean {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
-
-  const { code, meta } = error as { code?: unknown; meta?: { target?: unknown } };
-
-  return code === 'P2002' && Array.isArray(meta?.target) && meta.target.includes(field);
 }
 
 /**

@@ -11,7 +11,6 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
 import { apiErrors } from '../../lib/api-error.js';
 import { clearRefreshCookie, setRefreshCookie } from '../../lib/cookies.js';
-import { createLoginAttemptLimiter } from '../../lib/login-rate-limit.js';
 import { prisma } from '../../lib/prisma.js';
 import { loginUser, registerUser, revokeRefreshToken, rotateRefreshToken } from './auth.service.js';
 
@@ -21,7 +20,7 @@ import { loginUser, registerUser, revokeRefreshToken, rotateRefreshToken } from 
  * `refresh_token` (RN-F1-09).
  */
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
-  const loginAttempts = createLoginAttemptLimiter();
+  const loginAttempts = app.attemptLimiter;
 
   app.post(
     AUTH_ROUTES.register,
