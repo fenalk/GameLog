@@ -7,12 +7,13 @@ import { assertSafeTestDatabase } from '../setup/test-database.js';
 /**
  * Limpa as tabelas de identidade entre testes (refresh tokens antes dos usuários) e o
  * catálogo (jogos e taxonomias da F3; as relações N:N caem por cascade) — incluindo o
- * diário (F8), que também cairia por cascade dos jogos/usuários.
+ * diário (F8) e as resenhas (F10), que também cairiam por cascade dos jogos/usuários.
  * A guarda impede que a limpeza alcance um banco que não seja o dedicado aos testes.
  */
 export async function resetDatabase(): Promise<void> {
   assertSafeTestDatabase(env.DATABASE_URL);
 
+  await prisma.review.deleteMany();
   await prisma.gameLog.deleteMany();
   await prisma.game.deleteMany();
   await prisma.genre.deleteMany();
