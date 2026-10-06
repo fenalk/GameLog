@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider } from 'react-router';
+// O RouterProvider de `react-router/dom` é a versão DOM (necessária, por exemplo, para
+// `navigate(..., { flushSync: true })`).
+import { RouterProvider } from 'react-router/dom';
 
 import { restoreSession } from '@/lib/auth-store';
 import { router } from '@/router';

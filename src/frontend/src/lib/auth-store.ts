@@ -56,6 +56,16 @@ export function clearSession(): void {
   setState(ANONYMOUS);
 }
 
+/**
+ * Atualiza apenas o access token em memória. Usado após a troca de senha, que emite um
+ * novo par e revoga os refresh tokens anteriores (RN-F2-06).
+ */
+export function updateAccessToken(accessToken: string): void {
+  if (state.status === 'authenticated') {
+    setState({ ...state, accessToken });
+  }
+}
+
 let refreshInFlight: Promise<boolean> | null = null;
 
 async function performRefresh(): Promise<boolean> {
