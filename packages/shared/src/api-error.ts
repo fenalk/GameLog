@@ -41,6 +41,8 @@ export const ERROR_CODES = {
   internal: 'INTERNAL_ERROR',
   usernameTaken: 'USERNAME_TAKEN',
   emailTaken: 'EMAIL_TAKEN',
+  invalidCurrentPassword: 'INVALID_CURRENT_PASSWORD',
+  lastAdmin: 'LAST_ADMIN',
   serviceUnavailable: 'SERVICE_UNAVAILABLE',
 } as const;
 
