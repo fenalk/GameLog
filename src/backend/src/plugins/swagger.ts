@@ -17,7 +17,10 @@ export async function registerOpenApi(app: FastifyInstance): Promise<void> {
           'API REST do GameLog — contratos definidos com Zod e compartilhados via @gamelog/shared.',
         version: '0.1.0',
       },
-      tags: [{ name: 'health', description: 'Verificações de saúde da API' }],
+      tags: [
+        { name: 'health', description: 'Verificações de saúde da API' },
+        { name: 'auth', description: 'Cadastro, login, sessão e identidade do usuário' },
+      ],
     },
     transform: jsonSchemaTransform,
   });
