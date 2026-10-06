@@ -48,7 +48,8 @@ npm run dev                          # API em :3000 e frontend em :5173
 - Saúde da API: `http://localhost:3000/api/v1/health` · prontidão: `/api/v1/health/ready`
 - Documentação OpenAPI: `http://localhost:3000/docs`
 - Frontend: `http://localhost:5173` (proxy `/api` → backend)
-- Cadastro e login: `http://localhost:5173/cadastro` e `http://localhost:5173/entrar`
+- Cadastro, login e conta: `http://localhost:5173/cadastro`, `http://localhost:5173/entrar` e `http://localhost:5173/conta`
+- Perfil público: `http://localhost:5173/jogadores/<username>`
 
 ## Scripts
 

@@ -66,9 +66,9 @@ Estabelece as personas Visitante, Jogador e Administrador e os papéis de acesso
 - [x] `T1.03` Testar F1
 
 ### F2 — Gerenciamento de perfil
-- [ ] `T1.04` Escrever a SPEC de F2
-- [ ] `T1.05` Implementar F2
-- [ ] `T1.06` Testar F2
+- [x] `T1.04` Escrever a SPEC de F2
+- [x] `T1.05` Implementar F2
+- [x] `T1.06` Testar F2
 
 ### Fundação de acesso (transversal à etapa)
 - [x] `T1.07` Definir papéis e permissões para Visitante, Jogador e Administrador
