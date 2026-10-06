@@ -107,6 +107,9 @@ As escolhas foram guiadas pelos seguintes critérios:
 ## 6. Autenticação, autorização e segurança
 
 - **Hash de senha:** `argon2id` (recomendado para novos sistemas) — alternativa: `bcrypt`.
+  Bibliotecas escolhidas: [`argon2`](https://www.npmjs.com/package/argon2) para o hash e
+  [`jsonwebtoken`](https://www.npmjs.com/package/jsonwebtoken) + [`@fastify/cookie`](https://www.npmjs.com/package/@fastify/cookie)
+  para os tokens e o cookie de refresh.
 - **Autenticação:** JWT com *access token* de curta duração + *refresh token*, adequado a uma
   API REST consumida por frontend separado.
 - **Autorização:** controle de acesso baseado em papéis (**RBAC**) cobrindo as três personas —
