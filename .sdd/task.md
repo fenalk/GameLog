@@ -41,18 +41,18 @@ dependências da seção 6 do [plano](./plan.md).
 
 Base técnica e arquitetural que sustenta todas as demais etapas.
 
-- [ ] `T0.01` Escrever a SPEC de arquitetura (organização do backend, camada de acesso a dados relacional e padrão da API REST)
-- [ ] `T0.02` Configurar o projeto TypeScript em modo `strict` e os scripts do `package.json`
-- [ ] `T0.03` Definir e configurar a estrutura de pastas do código (`src/`, módulos do backend e do frontend)
-- [ ] `T0.04` Configurar banco de dados relacional e o mecanismo de migrations
-- [ ] `T0.05` Configurar lint e formatação (ESLint + Prettier)
-- [ ] `T0.06` Configurar o ambiente de testes e a pasta `tests/`
-- [ ] `T0.07` Configurar variáveis de ambiente e o ambiente local (Docker Compose)
-- [ ] `T0.08` Configurar o padrão da API REST (esqueleto do servidor e endpoint de saúde)
-- [ ] `T0.09` Configurar o esqueleto do frontend e o roteamento base
-- [ ] `T0.10` Configurar Git/GitHub (convenções de commit, branches, PRs e proteção da branch principal)
-- [ ] `T0.11` Configurar a integração contínua (lint, type-check, testes e build por PR)
-- [ ] `T0.12` Criar o modelo/template de SPEC e o padrão de registro de sessões em `prompts/sessoes/`
+- [x] `T0.01` Escrever a SPEC de arquitetura (organização do backend, camada de acesso a dados relacional e padrão da API REST)
+- [x] `T0.02` Configurar o projeto TypeScript em modo `strict` e os scripts do `package.json`
+- [x] `T0.03` Definir e configurar a estrutura de pastas do código (`src/`, módulos do backend e do frontend)
+- [x] `T0.04` Configurar banco de dados relacional e o mecanismo de migrations
+- [x] `T0.05` Configurar lint e formatação (ESLint + Prettier)
+- [x] `T0.06` Configurar o ambiente de testes e a pasta `tests/`
+- [x] `T0.07` Configurar variáveis de ambiente e o ambiente local (Docker Compose)
+- [x] `T0.08` Configurar o padrão da API REST (esqueleto do servidor e endpoint de saúde)
+- [x] `T0.09` Configurar o esqueleto do frontend e o roteamento base
+- [~] `T0.10` Configurar Git/GitHub (convenções de commit, branches, PRs e proteção da branch principal) — convenções documentadas em `docs/git-e-github.md`; proteção da branch a aplicar no GitHub
+- [~] `T0.11` Configurar a integração contínua (lint, type-check, testes e build por PR) — workflow criado em `.github/workflows/ci.yml`; verde a confirmar no primeiro PR
+- [x] `T0.12` Criar o modelo/template de SPEC e o padrão de registro de sessões em `prompts/sessoes/`
 
 ---
 
