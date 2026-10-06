@@ -1,0 +1,15 @@
+// Schema do banco de dados do GameLog (PostgreSQL).
+//
+// Etapa 0 (Fundação): este arquivo define apenas a base da camada de persistência.
+// Os modelos de domínio (jogos, gêneros, plataformas, avaliações, resenhas, listas,
+// seguidores, denúncias etc.) serão criados pelas migrations de cada funcionalidade
+// (F1–F15), a partir das SPECs correspondentes.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

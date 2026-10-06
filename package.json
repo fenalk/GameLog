@@ -1,25 +1,61 @@
 {
   "name": "gamelog",
-  "version": "1.0.0",
-  "description": "Desenvolvimento de Software apoiado por IA com uso de Spec-Driven Development (SDD)",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "GameLog — plataforma web de catálogo e avaliação de jogos (monorepo: backend, frontend e pacotes compartilhados)",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "src/backend",
+    "src/frontend"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npm run build -w @gamelog/shared && concurrently -n shared,api,web -c green,blue,magenta \"npm run dev -w @gamelog/shared\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev -w @gamelog/backend",
+    "dev:frontend": "npm run dev -w @gamelog/frontend",
+    "build": "npm run build -w @gamelog/shared && npm run build -w @gamelog/backend && npm run build -w @gamelog/frontend",
+    "typecheck": "npm run build -w @gamelog/shared && npm run typecheck -w @gamelog/shared && npm run typecheck -w @gamelog/backend && npm run typecheck -w @gamelog/frontend",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "db:generate": "npm run db:generate -w @gamelog/backend",
+    "db:migrate": "npm run db:migrate -w @gamelog/backend",
+    "db:deploy": "npm run db:deploy -w @gamelog/backend",
+    "db:reset": "npm run db:reset -w @gamelog/backend",
+    "db:studio": "npm run db:studio -w @gamelog/backend"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fenalk/GameLog.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/fenalk/GameLog/issues"
   },
   "homepage": "https://github.com/fenalk/GameLog#readme",
   "devDependencies": {
-    "@types/node": "^26.6.4",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^7.2.1",
+    "concurrently": "^10.0.5",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "supertest": "^7.3.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
   }
 }
