@@ -3,8 +3,9 @@
 // Etapa 0 (Fundação): este arquivo define apenas a base da camada de persistência.
 // Etapa 1 (Identidade e acesso — F1): usuários e refresh tokens (SPEC F1).
 // Etapa 1 (Identidade e acesso — F2): campos de perfil do usuário (SPEC F2).
-// Os demais modelos de domínio serão criados pelas migrations de cada funcionalidade
-// (F3–F15), a partir das SPECs correspondentes.
+// Etapa 2 (Catálogo de jogos — F3): jogos e taxonomias com as relações N:N (SPEC F3,
+// seção 1). Os campos exclusivos de F4–F7 serão acrescentados pelas migrations das
+// respectivas funcionalidades.
 
 generator client {
   provider = "prisma-client"
@@ -60,4 +61,92 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+/// Jogo do catálogo (seção 1 da SPEC F3). A leitura pública e a busca são da F3; a
+/// criação, edição e exclusão são da F4. Os agregados de avaliação são mantidos pela F9
+/// e permanecem nulos/zero até lá (RN-F3-06).
+model Game {
+  id            String    @id @default(uuid()) @db.Uuid
+  slug          String    @unique @db.VarChar(160)
+  title         String    @db.VarChar(150)
+  description   String?
+  releaseDate   DateTime? @map("release_date") @db.Date
+  coverUrl      String?   @map("cover_url") @db.VarChar(500)
+  ratingAverage Float?    @map("rating_average") @db.Real
+  ratingCount   Int       @default(0) @map("rating_count")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  genres        GameGenre[]
+  platforms     GamePlatform[]
+  developers    GameDeveloper[]
+
+  @@map("games")
+}
+
+/// Gênero (SPEC F3, seção 1; campos de gestão na F5). O `slug` é usado nos filtros e
+/// nas URLs.
+model Genre {
+  id    String      @id @default(uuid()) @db.Uuid
+  name  String      @db.VarChar(50)
+  slug  String      @unique @db.VarChar(60)
+  games GameGenre[]
+
+  @@map("genres")
+}
+
+/// Plataforma (SPEC F3, seção 1; campos de gestão na F6).
+model Platform {
+  id    String         @id @default(uuid()) @db.Uuid
+  name  String         @db.VarChar(60)
+  slug  String         @unique @db.VarChar(70)
+  games GamePlatform[]
+
+  @@map("platforms")
+}
+
+/// Desenvolvedora (SPEC F3, seção 1; campos de gestão na F7).
+model Developer {
+  id    String          @id @default(uuid()) @db.Uuid
+  name  String          @db.VarChar(100)
+  slug  String          @unique @db.VarChar(110)
+  games GameDeveloper[]
+
+  @@map("developers")
+}
+
+/// Relação N:N jogo ↔ gênero (seção 1 da SPEC F3).
+model GameGenre {
+  gameId  String @map("game_id") @db.Uuid
+  genreId String @map("genre_id") @db.Uuid
+  game    Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, genreId])
+  @@index([genreId])
+  @@map("game_genres")
+}
+
+/// Relação N:N jogo ↔ plataforma (seção 1 da SPEC F3).
+model GamePlatform {
+  gameId     String   @map("game_id") @db.Uuid
+  platformId String   @map("platform_id") @db.Uuid
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform   Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, platformId])
+  @@index([platformId])
+  @@map("game_platforms")
+}
+
+/// Relação N:N jogo ↔ desenvolvedora (seção 1 da SPEC F3).
+model GameDeveloper {
+  gameId      String    @map("game_id") @db.Uuid
+  developerId String    @map("developer_id") @db.Uuid
+  game        Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  developer   Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, developerId])
+  @@index([developerId])
+  @@map("game_developers")
 }
