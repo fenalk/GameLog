@@ -50,7 +50,7 @@ Base técnica e arquitetural que sustenta todas as demais etapas.
 - [x] `T0.07` Configurar variáveis de ambiente e o ambiente local (Docker Compose)
 - [x] `T0.08` Configurar o padrão da API REST (esqueleto do servidor e endpoint de saúde)
 - [x] `T0.09` Configurar o esqueleto do frontend e o roteamento base
-- [~] `T0.10` Configurar Git/GitHub (convenções de commit, branches, PRs e proteção da branch principal) — convenções documentadas em `docs/git-e-github.md`; proteção da branch a aplicar no GitHub
+- [!] `T0.10` Configurar Git/GitHub (convenções de commit, branches, PRs e proteção da branch principal) — convenções documentadas em `docs/git-e-github.md`; a proteção da branch está bloqueada pelo plano (repositório privado no GitHub Free não oferece proteção de branch/rulesets)
 - [~] `T0.11` Configurar a integração contínua (lint, type-check, testes e build por PR) — workflow criado em `.github/workflows/ci.yml`; verde a confirmar no primeiro PR
 - [x] `T0.12` Criar o modelo/template de SPEC e o padrão de registro de sessões em `prompts/sessoes/`
 

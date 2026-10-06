@@ -70,7 +70,7 @@ chore(db): adiciona migration de gêneros
 
 ## 4. Proteção da branch principal (`main`)
 
-Configuração de proteção aplicada no GitHub (Settings → Rules/Branches, ou via `gh api`):
+Configuração de proteção pretendida para a `main`:
 
 - exigir pull request antes do merge (sem pushes diretos);
 - exigir 1 aprovação de revisão e nova aprovação após novos commits;
@@ -79,7 +79,13 @@ Configuração de proteção aplicada no GitHub (Settings → Rules/Branches, ou
 - impedir force push e exclusão da branch;
 - exigir histórico linear (aplicado junto com o squash merge).
 
-Aplicação via GitHub CLI (exemplo):
+> **Situação atual:** o repositório é privado no plano **GitHub Free**, que não oferece proteção
+> de branch nem rulesets (a API responde `403 — Upgrade to GitHub Pro or make this repository
+> public to enable this feature`). Até que o repositório seja público ou o plano seja Pro,
+> a convenção vale como acordo da dupla. Com a permissão disponível, aplicar com o comando
+> abaixo (e manter a contagem de aprovações em `1` quando houver dois colaboradores).
+
+Aplicação via GitHub CLI:
 
 ```bash
 gh api -X PUT repos/fenalk/GameLog/branches/main/protection \
@@ -93,8 +99,8 @@ gh api -X PUT repos/fenalk/GameLog/branches/main/protection \
   -F 'allow_deletions=false'
 ```
 
-> Observação: a proteção de branch exige permissão de administrador no repositório e é
-> configurada uma única vez (não é versionada junto com o código).
+> Observação: a proteção de branch é configurada no GitHub (não é versionada junto com o
+> código) e exige permissão de administrador no repositório.
 
 ## 5. Fluxo resumido
 
