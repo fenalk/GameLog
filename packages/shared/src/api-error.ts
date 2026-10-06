@@ -43,6 +43,15 @@ export const ERROR_CODES = {
   emailTaken: 'EMAIL_TAKEN',
   invalidCurrentPassword: 'INVALID_CURRENT_PASSWORD',
   lastAdmin: 'LAST_ADMIN',
+  genreNameTaken: 'GENRE_NAME_TAKEN',
+  genreSlugTaken: 'GENRE_SLUG_TAKEN',
+  genreInUse: 'GENRE_IN_USE',
+  platformNameTaken: 'PLATFORM_NAME_TAKEN',
+  platformSlugTaken: 'PLATFORM_SLUG_TAKEN',
+  platformInUse: 'PLATFORM_IN_USE',
+  developerNameTaken: 'DEVELOPER_NAME_TAKEN',
+  developerSlugTaken: 'DEVELOPER_SLUG_TAKEN',
+  developerInUse: 'DEVELOPER_IN_USE',
   serviceUnavailable: 'SERVICE_UNAVAILABLE',
 } as const;
 
