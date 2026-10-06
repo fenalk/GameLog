@@ -1,6 +1,5 @@
 import {
   GAMES_PAGE_SIZE_DEFAULT,
-  GAMES_PAGE_SIZE_MAX,
   GAME_ROUTES,
   defaultGameSort,
   gameDetailSchema,
@@ -15,6 +14,9 @@ import {
 } from '@gamelog/shared';
 
 import { apiRequest } from '@/lib/api';
+import { fetchDevelopers } from '@/lib/developers';
+import { fetchGenres } from '@/lib/genres';
+import { fetchPlatforms } from '@/lib/platforms';
 
 /** Parâmetros aceitos por `GET /games` (SPEC F3, seção 4). */
 export type GamesRequest = {
@@ -95,38 +97,27 @@ export async function fetchGameDetail(identifier: string): Promise<GameDetail> {
 }
 
 /**
- * Opções dos filtros de gênero/plataforma. Enquanto as leituras públicas de F5/F6 não
- * existem, as opções são derivadas de uma página ampla do próprio catálogo; trocar pelas
- * leituras de gêneros e plataformas quando elas forem entregues (seção 4 da SPEC F3).
+ * Opções dos filtros de gênero/plataforma/desenvolvedora (seção 4 da SPEC F3 e RN-F7-13).
+ * As taxonomias vêm das leituras públicas da F5, da F6 e da F7 (`GET /genres`,
+ * `GET /platforms` e `GET /developers`).
  */
 export async function fetchFilterOptions(): Promise<{
   genres: GameTaxonomyRef[];
   platforms: GameTaxonomyRef[];
+  developers: GameTaxonomyRef[];
 }> {
-  const page = await fetchGames({
-    sort: 'title',
-    order: 'asc',
-    pageSize: GAMES_PAGE_SIZE_MAX,
-  });
-
-  const genres = new Map<string, GameTaxonomyRef>();
-  const platforms = new Map<string, GameTaxonomyRef>();
-
-  for (const game of page.data) {
-    for (const genre of game.genres) {
-      genres.set(genre.slug, genre);
-    }
-
-    for (const platform of game.platforms) {
-      platforms.set(platform.slug, platform);
-    }
-  }
+  const [genres, platforms, developers] = await Promise.all([
+    fetchGenres(),
+    fetchPlatforms(),
+    fetchDevelopers(),
+  ]);
 
   const byName = (a: GameTaxonomyRef, b: GameTaxonomyRef) => a.name.localeCompare(b.name, 'pt-BR');
 
   return {
-    genres: [...genres.values()].sort(byName),
-    platforms: [...platforms.values()].sort(byName),
+    genres: genres.map(({ id, name, slug }) => ({ id, name, slug })).sort(byName),
+    platforms: platforms.map(({ id, name, slug }) => ({ id, name, slug })).sort(byName),
+    developers: developers.map(({ id, name, slug }) => ({ id, name, slug })).sort(byName),
   };
 }
 
@@ -135,6 +126,7 @@ export type CatalogUrlState = {
   q: string;
   genres: string[];
   platforms: string[];
+  developers: string[];
   releaseYearFrom: string;
   releaseYearTo: string;
   minRating: string;
@@ -152,6 +144,7 @@ export function catalogStateFromSearch(search: URLSearchParams): CatalogUrlState
     q: search.get('q') ?? '',
     genres: search.getAll('genre'),
     platforms: search.getAll('platform'),
+    developers: search.getAll('developer'),
     releaseYearFrom: search.get('releaseYearFrom') ?? '',
     releaseYearTo: search.get('releaseYearTo') ?? '',
     minRating: search.get('minRating') ?? '',
@@ -183,6 +176,7 @@ export function catalogRequestFromState(state: CatalogUrlState, pageSize?: numbe
     q: q.length > 0 ? q : undefined,
     genres: state.genres,
     platforms: state.platforms,
+    developers: state.developers,
     releaseYearFrom: yearFrom(state.releaseYearFrom),
     releaseYearTo: yearFrom(state.releaseYearTo),
     minRating: ratingFrom(state.minRating),
@@ -199,6 +193,7 @@ export function catalogPath(state: CatalogUrlState): string {
     q: state.q.trim() || undefined,
     genres: state.genres,
     platforms: state.platforms,
+    developers: state.developers,
     releaseYearFrom: yearFrom(state.releaseYearFrom),
     releaseYearTo: yearFrom(state.releaseYearTo),
     minRating: ratingFrom(state.minRating),
