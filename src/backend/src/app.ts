@@ -10,7 +10,10 @@ import {
 
 import { env } from './config/env.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { developersRoutes } from './modules/catalog/developers.routes.js';
 import { gamesRoutes } from './modules/catalog/games.routes.js';
+import { genresRoutes } from './modules/catalog/genres.routes.js';
+import { platformsRoutes } from './modules/catalog/platforms.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { profileRoutes } from './modules/profile/profile.routes.js';
 import { attemptLimiterPlugin } from './plugins/attempt-limiter.js';
@@ -56,6 +59,9 @@ export async function buildApp() {
   await app.register(authRoutes, { prefix: API_PREFIX });
   await app.register(profileRoutes, { prefix: API_PREFIX });
   await app.register(gamesRoutes, { prefix: API_PREFIX });
+  await app.register(genresRoutes, { prefix: API_PREFIX });
+  await app.register(platformsRoutes, { prefix: API_PREFIX });
+  await app.register(developersRoutes, { prefix: API_PREFIX });
 
   return app;
 }
