@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'vitest/config';
 
 import { resolveTestDatabaseUrl } from './tests/setup/test-database.js';
@@ -14,6 +16,12 @@ const testEnv = {
 };
 
 export default defineConfig({
+  // Mesmo alias do frontend, para que testes unitários importem seus módulos (`@/…`).
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src/frontend/src', import.meta.url)),
+    },
+  },
   test: {
     globalSetup: ['./tests/setup/prepare-database.ts'],
     projects: [
