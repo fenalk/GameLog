@@ -52,7 +52,6 @@ Base técnica e arquitetural que sustenta todas as demais etapas.
 - [x] `T0.09` Configurar o esqueleto do frontend e o roteamento base
 - [x] `T0.10` Configurar Git/GitHub (convenções de commit, branches, PRs e proteção da branch principal) — convenções em `docs/git-e-github.md` e proteção da `main` aplicada (repositório tornado público; exigir PR, CI verde, histórico linear e conversas resolvidas)
 - [x] `T0.11` Configurar a integração contínua (lint, type-check, testes e build por PR) — workflow em `.github/workflows/ci.yml`, verde no PR #1 (lint, formatação, tipos, build, migrations, testes de integração e e2e)
-- [x] `T0.12` Criar o modelo/template de SPEC e o padrão de registro de sessões em `prompts/sessoes/`
 
 ---
 
@@ -193,7 +192,6 @@ Valem durante todo o projeto, em paralelo às etapas.
 
 - [ ] `TC.01` Manter o [plano geral](./plan.md) atualizado conforme o projeto evolui
 - [ ] `TC.02` Manter a documentação de tecnologias ([tecnologias.md](../docs/tecnologias.md)) e a SPEC de arquitetura atualizadas
-- [ ] `TC.03` Registrar ao final de cada sessão com agentes de IA o diálogo completo em `prompts/sessoes/` no formato `AAAA-MM-DD-HHMM-<ferramenta>.md`
 - [ ] `TC.04` Manter a integração contínua verde (lint, type-check, testes e build)
 - [ ] `TC.05` Manter `README.md` atualizado (URL, dupla, stack, como rodar, ferramentas e modelo)
 
@@ -206,6 +204,3 @@ Uma etapa só é considerada concluída quando, para todas as suas funcionalidad
 - a SPEC estiver escrita e definida;
 - a implementação estiver concluída em `src/`;
 - os testes estiverem implementados e passando em `tests/`.
-
-O registro da sessão correspondente (`TC.03`) é condição de encerramento de cada sessão de
-conversa com agentes de IA.

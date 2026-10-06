@@ -34,15 +34,13 @@ O plano e as SPECs têm responsabilidades distintas e complementares:
 | SPECs (em [`SPEC/`](../SPEC)) | Detalhamento dos requisitos de **cada** funcionalidade. |
 | `src/` | Implementação, somente após a SPEC correspondente estar definida. |
 | `tests/` | Verificação da implementação de cada funcionalidade. |
-| `prompts/sessoes/` | Registro das sessões com agentes de IA (ver seção 8). |
 
 Fluxo de trabalho proposto:
 
 1. Selecionar a próxima funcionalidade conforme a ordem deste plano;
 2. escrever a SPEC da funcionalidade;
 3. implementar a funcionalidade a partir da SPEC;
-4. testar;
-5. registrar a sessão de conversa com a IA.
+4. testar.
 
 Nenhuma funcionalidade deve ser implementada sem a SPEC correspondente.
 
@@ -170,16 +168,12 @@ Uma etapa é considerada concluída quando, para cada funcionalidade que a comp�
 
 - a SPEC correspondente estiver escrita e definida;
 - a implementação estiver concluída em `src/`;
-- os testes estiverem implementados e passando em `tests/`;
-- a sessão de conversa com o agente de IA estiver registrada (ver seção 8).
+- os testes estiverem implementados e passando em `tests/`.
 
 ---
 
 ## 8. Práticas transversais
 
-- **Registro de sessões:** ao final de cada sessão de conversa com agentes de IA, deve ser
-  criada uma documentação com o diálogo completo, no formato
-  `AAAA-MM-DD-HHMM-<ferramenta>.md`, armazenada em `prompts/sessoes/`.
 - **Controle de versão:** uso de Git/GitHub durante todo o desenvolvimento.
 - **Comunicação:** API REST entre frontend e backend.
 

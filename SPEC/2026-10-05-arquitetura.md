@@ -159,7 +159,6 @@ A Etapa 0 é considerada concluída quando todos os itens abaixo forem verificá
 - [ ] A integração contínua (GitHub Actions) executa lint, type-check, testes e build e fica verde em um PR.
 - [ ] As convenções de Git/GitHub estão documentadas (Conventional Commits, branches, PRs, proteção da branch principal).
 - [ ] As variáveis de ambiente estão gerenciadas via `.env`/`.env.example`, sem segredos versionados.
-- [ ] Existem o template de SPEC e o padrão de registro de sessões em `prompts/sessoes/` no formato `AAAA-MM-DD-HHMM-<ferramenta>.md`.
 - [ ] As decisões desta SPEC permanecem alinhadas à [visao_geral.md](../docs/visao_geral.md).
 
 ---

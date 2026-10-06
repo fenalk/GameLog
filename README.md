@@ -66,13 +66,11 @@ npm run dev                          # API em :3000 e frontend em :5173
   saída vai no README, com as linhas de teste separadas das demais.
 - **Git/GitHub** — convenções de branches, commits e pull requests em
   [docs/git-e-github.md](docs/git-e-github.md).
-- **Registro de sessões** — padrão em [prompts/sessoes/README.md](prompts/sessoes/README.md).
 
 # Modelo
 
 O projeto segue **Spec-Driven Development**: nenhuma funcionalidade é implementada antes de sua
 SPEC estar definida. O fluxo é: escolher a funcionalidade no [plano](.sdd/plan.md) → escrever a
-SPEC (template em [SPEC/template.md](SPEC/template.md)) → implementar em `src/` → testar em
-`tests/` → registrar a sessão com o agente de IA. As decisões de arquitetura e de tecnologia
+SPEC → implementar em `src/` → testar em `tests/`. As decisões de arquitetura e de tecnologia
 estão na [SPEC de arquitetura](SPEC/2026-10-05-arquitetura.md) e em
 [docs/tecnologias.md](docs/tecnologias.md).

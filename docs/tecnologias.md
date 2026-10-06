@@ -177,8 +177,6 @@ As escolhas foram guiadas pelos seguintes critérios:
   implementação, conforme o [plano geral](../.sdd/plan.md).
 - **Testes como verificação da SPEC:** cada critério de aceite deve ter teste correspondente
   (Vitest/Supertest/Playwright).
-- **Registro de sessões:** documentação das conversas com agentes de IA em `prompts/sessoes/`,
-  no formato `AAAA-MM-DD-HHMM-<ferramenta>.md`, conforme a visão geral.
 
 ---
 
