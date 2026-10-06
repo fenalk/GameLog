@@ -31,6 +31,9 @@ export default defineConfig({
           environment: 'node',
           include: ['tests/integration/**/*.test.ts'],
           env: { ...testEnv },
+          // Os arquivos de integração compartilham o mesmo banco dedicado e limpam as
+          // tabelas entre os casos: rodar arquivos em paralelo causaria interferência.
+          fileParallelism: false,
           testTimeout: 30_000,
           hookTimeout: 30_000,
         },

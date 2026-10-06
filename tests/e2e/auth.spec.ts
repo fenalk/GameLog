@@ -145,7 +145,7 @@ test.describe('SPEC F1 — interface de cadastro e login', () => {
     });
 
     let firstProfileRequest = true;
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/v1/me/profile', async (route) => {
       if (firstProfileRequest) {
         firstProfileRequest = false;
         await route.fulfill({
@@ -181,7 +181,7 @@ test.describe('SPEC F1 — interface de cadastro e login', () => {
         body: JSON.stringify({ error: { code: 'UNAUTHENTICATED', message: 'Sessão expirada' } }),
       });
     });
-    await page.route('**/api/v1/auth/me', async (route) => {
+    await page.route('**/api/v1/me/profile', async (route) => {
       await route.fulfill({
         status: 401,
         contentType: 'application/json',
