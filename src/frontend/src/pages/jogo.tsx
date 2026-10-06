@@ -1,7 +1,7 @@
-import type { GameLogEntry } from '@gamelog/shared';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import type { GameLogEntry, ReviewDetail } from '@gamelog/shared';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { CatalogError } from '@/components/catalog-feedback';
 import { GameLogCard } from '@/components/game-log-card';
@@ -9,17 +9,28 @@ import { GameLogFormDialog } from '@/components/game-log-form';
 import { GameCover } from '@/components/game-card';
 import { ConfirmDialog } from '@/components/modal';
 import { NotFound } from '@/components/not-found';
+import { Pagination } from '@/components/pagination';
+import { MyReviewCard } from '@/components/review-card';
+import { ReviewEmpty, ReviewError, ReviewItem, ReviewSkeletons } from '@/components/review-list';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { fetchGameDetail, formatRating, formatReleaseDate, gamePagePath } from '@/lib/catalog';
 import { useDocumentTitle } from '@/lib/document-title';
 import { formMessageFor } from '@/lib/forms';
 import { deleteMyGameLog, fetchMyGameLog } from '@/lib/game-logs';
+import {
+  REVIEW_SORT_OPTIONS,
+  deleteMyReview,
+  fetchGameReviews,
+  fetchMyReview,
+  reviewEditorPath,
+  reviewsRequestFromState,
+  reviewsStateFromSearch,
+} from '@/lib/reviews';
 
-/** Ações do jogador entregues pelas SPECs posteriores (F9–F11), ainda sem conteúdo. */
+/** Ações do jogador entregues pelas SPECs posteriores (F9 e F11), ainda sem conteúdo. */
 const RESERVED_ACTIONS = [
   { label: 'Avaliar', spec: 'F9' },
-  { label: 'Escrever resenha', spec: 'F10' },
   { label: 'Adicionar a lista', spec: 'F11' },
 ] as const;
 
@@ -43,11 +54,19 @@ function GameTaxonomyLink({ slug, name, param }: { slug: string; name: string; p
 export function JogoPage() {
   const { slug } = useParams();
   const { status: authStatus } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [formOpen, setFormOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmingReview, setConfirmingReview] = useState(false);
+  const [removingReview, setRemovingReview] = useState(false);
+  const [reviewActionError, setReviewActionError] = useState<string | null>(null);
+
+  const reviewsState = reviewsStateFromSearch(searchParams);
+  const reviewsRequest = reviewsRequestFromState(reviewsState);
 
   const query = useQuery({
     queryKey: ['catalog', 'game', slug],
@@ -66,6 +85,40 @@ export function JogoPage() {
     retry: (failureCount, error) =>
       !(error instanceof ApiError && error.status === 404) && failureCount < 2,
   });
+
+  const reviewsQuery = useQuery({
+    queryKey: ['reviews', 'game', slug, reviewsRequest],
+    queryFn: () => fetchGameReviews(slug ?? '', reviewsRequest),
+    enabled: Boolean(slug),
+    placeholderData: keepPreviousData,
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && error.status === 404) && failureCount < 2,
+  });
+
+  const reviewKey = ['reviews', 'mine', slug];
+
+  const reviewQuery = useQuery({
+    queryKey: reviewKey,
+    queryFn: () => fetchMyReview(slug ?? ''),
+    enabled: authStatus === 'authenticated' && Boolean(slug),
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && error.status === 404) && failureCount < 2,
+  });
+
+  // Atualiza a query string da seção de resenhas preservando os demais parâmetros.
+  const updateReviewParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      setSearchParams(
+        (current) => {
+          const params = new URLSearchParams(current);
+          mutate(params);
+          return params;
+        },
+        { replace: true, flushSync: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   useDocumentTitle(query.data ? `${query.data.title} · GameLog` : 'Jogo · GameLog');
 
@@ -103,6 +156,12 @@ export function JogoPage() {
   const entryFailed =
     entryQuery.isError &&
     !(entryQuery.error instanceof ApiError && entryQuery.error.status === 404);
+  const myReview: ReviewDetail | null = reviewQuery.data ?? null;
+  // `404` é o estado esperado de "sem resenha" (RN-F10-08); só outras falhas viram erro.
+  const reviewFailed =
+    reviewQuery.isError &&
+    !(reviewQuery.error instanceof ApiError && reviewQuery.error.status === 404);
+  const reviewPage = reviewsQuery.data;
   const returnTo = gamePagePath(game.slug);
 
   function handleSaved(saved: GameLogEntry) {
@@ -125,6 +184,49 @@ export function JogoPage() {
     } finally {
       setRemoving(false);
     }
+  }
+
+  function selectReviewSort(sort: string) {
+    updateReviewParams((params) => {
+      if (sort === 'recently_created') {
+        params.delete('sort');
+      } else {
+        params.set('sort', sort);
+      }
+
+      params.delete('page');
+    });
+  }
+
+  function goToReviewPage(page: number) {
+    updateReviewParams((params) => {
+      if (page > 1) {
+        params.set('page', String(page));
+      } else {
+        params.delete('page');
+      }
+    });
+  }
+
+  async function handleRemoveReview() {
+    setRemovingReview(true);
+    setReviewActionError(null);
+
+    try {
+      await deleteMyReview(game.slug);
+      setConfirmingReview(false);
+      queryClient.setQueryData(reviewKey, null);
+      void queryClient.invalidateQueries({ queryKey: ['reviews', 'game', slug] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'game', slug] });
+    } catch (error) {
+      setReviewActionError(formMessageFor(error));
+    } finally {
+      setRemovingReview(false);
+    }
+  }
+
+  function editReview() {
+    navigate(reviewEditorPath(game.slug));
   }
 
   return (
@@ -220,7 +322,7 @@ export function JogoPage() {
         {authStatus === 'anonymous' ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Entre na sua conta para registrar este jogo no seu diário.
+              Entre na sua conta para registrar este jogo no seu diário ou escrever uma resenha.
             </p>
             <div className="flex flex-wrap gap-2">
               <Link
@@ -284,8 +386,73 @@ export function JogoPage() {
           </>
         ) : null}
 
+        <div className="flex flex-col gap-3 border-t pt-4">
+          <h3 className="text-sm font-medium">Sua resenha</h3>
+
+          {authStatus === 'anonymous' ? (
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to={`/entrar?returnTo=${encodeURIComponent(returnTo)}`}
+                data-testid="resenha-escrever"
+                className="rounded-md border px-3 py-1.5 text-sm transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                Escrever resenha
+              </Link>
+            </div>
+          ) : null}
+
+          {authStatus === 'authenticated' && myReview ? (
+            <MyReviewCard
+              review={myReview}
+              onEdit={editReview}
+              onRemove={() => {
+                setReviewActionError(null);
+                setConfirmingReview(true);
+              }}
+            />
+          ) : null}
+
+          {authStatus === 'authenticated' && !myReview && reviewQuery.isPending ? (
+            <p className="text-sm text-muted-foreground">Carregando sua resenha…</p>
+          ) : null}
+
+          {authStatus === 'authenticated' && !myReview && reviewFailed ? (
+            <>
+              <p role="alert" className="text-sm text-destructive">
+                {formMessageFor(reviewQuery.error)}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  data-testid="resenha-tentar-novamente"
+                  onClick={() => void reviewQuery.refetch()}
+                  disabled={reviewQuery.isFetching}
+                  className="rounded-md border px-3 py-1.5 text-sm transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-60"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </>
+          ) : null}
+
+          {authStatus === 'authenticated' &&
+          !myReview &&
+          !reviewQuery.isPending &&
+          !reviewFailed ? (
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to={reviewEditorPath(game.slug)}
+                data-testid="resenha-escrever"
+                className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                Escrever resenha
+              </Link>
+            </div>
+          ) : null}
+        </div>
+
         <p className="text-sm text-muted-foreground">
-          Avaliação, resenha e listas chegam nas próximas funcionalidades.
+          Avaliação e listas chegam nas próximas funcionalidades.
         </p>
 
         <div className="flex flex-wrap gap-2">
@@ -314,6 +481,69 @@ export function JogoPage() {
         </div>
       </section>
 
+      <section
+        data-testid="resenhas-secao"
+        className="flex flex-col gap-4 rounded-xl border bg-card p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-medium">Resenhas</h2>
+            <span data-testid="resenhas-total" className="text-sm text-muted-foreground">
+              {game.reviewCount}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="ordem-resenhas" className="text-sm font-medium">
+              Ordenar
+            </label>
+            <select
+              id="ordem-resenhas"
+              name="sort"
+              value={reviewsState.sort || 'recently_created'}
+              onChange={(event) => selectReviewSort(event.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              {REVIEW_SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {reviewsQuery.isPending ? <ReviewSkeletons /> : null}
+
+        {reviewsQuery.isError ? (
+          <ReviewError
+            message={formMessageFor(reviewsQuery.error)}
+            onRetry={() => void reviewsQuery.refetch()}
+            retrying={reviewsQuery.isFetching}
+          />
+        ) : null}
+
+        {reviewPage ? (
+          reviewPage.data.length === 0 ? (
+            <ReviewEmpty message="Ainda não há resenhas para este jogo" />
+          ) : (
+            <>
+              <ul data-testid="resenhas-lista" className="flex flex-col gap-3">
+                {reviewPage.data.map((review) => (
+                  <ReviewItem key={review.id} review={review} />
+                ))}
+              </ul>
+
+              <Pagination
+                page={reviewPage.meta.page}
+                totalPages={reviewPage.meta.totalPages}
+                onPageChange={goToReviewPage}
+              />
+            </>
+          )
+        ) : null}
+      </section>
+
       <section className="flex flex-col gap-2 rounded-xl border border-dashed p-4">
         <h2 className="text-lg font-medium">Jogos semelhantes</h2>
         <p className="text-sm text-muted-foreground">Em breve (F13).</p>
@@ -340,6 +570,21 @@ export function JogoPage() {
           onCancel={() => {
             setConfirming(false);
             setActionError(null);
+          }}
+        />
+      ) : null}
+
+      {confirmingReview ? (
+        <ConfirmDialog
+          title="Remover resenha"
+          message={`Remover a sua resenha de "${game.title}"? Esta ação não pode ser desfeita.`}
+          confirmLabel="Remover"
+          busy={removingReview}
+          error={reviewActionError ?? undefined}
+          onConfirm={() => void handleRemoveReview()}
+          onCancel={() => {
+            setConfirmingReview(false);
+            setReviewActionError(null);
           }}
         />
       ) : null}
