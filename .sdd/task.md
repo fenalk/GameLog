@@ -125,9 +125,9 @@ Forma o histórico pessoal e as opiniões que sustentam as avaliações sociais.
 - [ ] `T3.06` Testar F9
 
 ### F10 — Escrita e gerenciamento de resenhas
-- [ ] `T3.07` Escrever a SPEC de F10
-- [ ] `T3.08` Implementar F10
-- [ ] `T3.09` Testar F10
+- [x] `T3.07` Escrever a SPEC de F10
+- [x] `T3.08` Implementar F10
+- [x] `T3.09` Testar F10
 
 ---
 

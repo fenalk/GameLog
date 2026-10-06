@@ -13,6 +13,8 @@ import { EntrarPage } from '@/pages/entrar';
 import { HomePage } from '@/pages/home';
 import { JogadorPage } from '@/pages/jogador';
 import { JogoPage } from '@/pages/jogo';
+import { ReviewEditorPage } from '@/pages/review-editor';
+import { ReviewPage } from '@/pages/review';
 
 /**
  * Rotas da aplicação. `/conta` é protegida: o visitante é enviado para
@@ -38,6 +40,18 @@ export const router = createBrowserRouter([
       {
         path: 'jogos/:slug',
         element: <JogoPage />,
+      },
+      {
+        path: 'jogos/:slug/resenha',
+        element: (
+          <RequireAuth>
+            <ReviewEditorPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'resenhas/:id',
+        element: <ReviewPage />,
       },
       {
         path: 'cadastro',

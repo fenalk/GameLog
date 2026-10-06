@@ -7,6 +7,7 @@
 // seção 1). Os campos exclusivos de F4–F7 serão acrescentados pelas migrations das
 // respectivas funcionalidades.
 // Etapa 3 (Atividade do jogador — F8): diário de jogos jogados (SPEC F8, seção 1).
+// Etapa 3 (Atividade do jogador — F10): resenhas (SPEC F10, seção 1).
 
 generator client {
   provider = "prisma-client"
@@ -38,6 +39,14 @@ enum GameLogStatus {
   BACKLOG
 }
 
+/// Visibilidade da resenha (seção 1 da SPEC F10). A F10 cria sempre `PUBLISHED`; as
+/// transições (`HIDDEN`/`REMOVED`) pertencem à moderação da F14.
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+  REMOVED
+}
+
 /// Conta de usuário (seção 3 da SPEC F1). `username` e `email` são persistidos já
 /// normalizados (minúsculos, sem espaços) e comparados de forma única. Os campos de
 /// perfil são nulos por padrão (RN-F2-02): `displayName` nulo é exibido como o
@@ -56,6 +65,7 @@ model User {
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
   refreshTokens RefreshToken[]
   gameLogs      GameLog[]
+  reviews       Review[]
 
   @@map("users")
 }
@@ -93,6 +103,7 @@ model Game {
   platforms     GamePlatform[]
   developers    GameDeveloper[]
   gameLogs      GameLog[]
+  reviews       Review[]
 
   @@map("games")
 }
@@ -199,4 +210,26 @@ model GameLog {
   @@index([userId, updatedAt])
   @@index([gameId])
   @@map("game_logs")
+}
+
+/// Resenha de um jogo (seção 1 da SPEC F10): uma única resenha por par jogador↔jogo
+/// (RN-F10-02), com título, corpo em texto puro e status de visibilidade. As cascatas
+/// (RN-F10-16) removem a resenha quando a conta ou o jogo é excluído.
+model Review {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  gameId    String       @map("game_id") @db.Uuid
+  title     String       @db.VarChar(120)
+  body      String       @db.Text
+  status    ReviewStatus @default(PUBLISHED)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([gameId, createdAt])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("reviews")
 }

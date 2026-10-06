@@ -4,10 +4,11 @@ import {
   publicProfilePath,
   type GameLogEntry,
   type PublicProfile,
+  type ReviewSummary,
 } from '@gamelog/shared';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { DiaryEmpty, DiaryError, DiaryItem, DiarySkeletons } from '@/components/game-log-list';
 import { GameLogFormDialog } from '@/components/game-log-form';
@@ -15,6 +16,7 @@ import { ConfirmDialog } from '@/components/modal';
 import { NotFound } from '@/components/not-found';
 import { Pagination } from '@/components/pagination';
 import { ProfileAvatar } from '@/components/profile-avatar';
+import { ReviewEmpty, ReviewError, ReviewItem, ReviewSkeletons } from '@/components/review-list';
 import { ApiError, apiRequest } from '@/lib/api';
 import { useAuth } from '@/lib/auth-store';
 import { fetchGameDetail } from '@/lib/catalog';
@@ -26,11 +28,19 @@ import {
   fetchPublicDiary,
 } from '@/lib/game-logs';
 import { formatMemberSince } from '@/lib/profile';
+import {
+  REVIEW_SORT_OPTIONS,
+  deleteMyReview,
+  fetchMyReviews,
+  fetchPublicReviews,
+  reviewEditorPath,
+  reviewsRequestFromState,
+  reviewsStateFromSearch,
+} from '@/lib/reviews';
 
-/** Seções entregues pelas SPECs posteriores (F9–F11): reservadas, ainda sem conteúdo. */
+/** Seções entregues pelas SPECs posteriores (F9 e F11): reservadas, ainda sem conteúdo. */
 const RESERVED_SECTIONS = [
   { label: 'Avaliações', spec: 'F9' },
-  { label: 'Resenhas', spec: 'F10' },
   { label: 'Listas', spec: 'F11' },
 ] as const;
 
@@ -231,16 +241,236 @@ function DiarySection({ username, isOwner }: { username: string; isOwner: boolea
   );
 }
 
+/**
+ * Aba Resenhas do perfil (seção 4 da SPEC F10): lista as resenhas do jogador com
+ * paginação e ordenação sincronizadas na URL. Para o dono, usa `GET /me/reviews` (inclui
+ * as não publicadas, com selo de status) e mostra as ações de editar/remover; para os
+ * demais, usa a listagem pública (somente publicadas) em modo leitura.
+ */
+function ReviewSection({ username, isOwner }: { username: string; isOwner: boolean }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const state = reviewsStateFromSearch(searchParams, 'r');
+  const request = reviewsRequestFromState(state);
+
+  const [removing, setRemoving] = useState<ReviewSummary | null>(null);
+  const [removeError, setRemoveError] = useState<string | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+
+  const query = useQuery({
+    queryKey: ['reviews', 'list', isOwner ? 'mine' : 'public', username, request],
+    queryFn: () => (isOwner ? fetchMyReviews(request) : fetchPublicReviews(username, request)),
+    placeholderData: keepPreviousData,
+    retry: 1,
+  });
+
+  const updateParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      setSearchParams(
+        (current) => {
+          const params = new URLSearchParams(current);
+          mutate(params);
+          return params;
+        },
+        { replace: true, flushSync: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  function selectSort(value: string) {
+    updateParams((params) => {
+      if (value === 'recently_created') {
+        params.delete('rsort');
+      } else {
+        params.set('rsort', value);
+      }
+
+      params.delete('rpage');
+    });
+  }
+
+  function goToPage(page: number) {
+    updateParams((params) => {
+      if (page > 1) {
+        params.set('rpage', String(page));
+      } else {
+        params.delete('rpage');
+      }
+    });
+  }
+
+  async function handleRemove() {
+    if (!removing) {
+      return;
+    }
+
+    setBusy(true);
+    setRemoveError(undefined);
+
+    try {
+      await deleteMyReview(removing.game.slug);
+      setRemoving(null);
+      void queryClient.invalidateQueries({ queryKey: ['reviews'] });
+    } catch (error) {
+      setRemoveError(formMessageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const page = query.data;
+
+  return (
+    <section data-testid="resenhas-secao" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-medium">Resenhas</h2>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="ordem-resenhas-perfil" className="text-sm font-medium">
+            Ordenar
+          </label>
+          <select
+            id="ordem-resenhas-perfil"
+            name="rsort"
+            value={state.sort || 'recently_created'}
+            onChange={(event) => selectSort(event.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            {REVIEW_SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {query.isPending ? <ReviewSkeletons /> : null}
+
+      {query.isError ? (
+        <ReviewError
+          message={formMessageFor(query.error)}
+          onRetry={() => void query.refetch()}
+          retrying={query.isFetching}
+        />
+      ) : null}
+
+      {page ? (
+        page.data.length === 0 ? (
+          isOwner ? (
+            <ReviewEmpty
+              message="Você ainda não escreveu resenhas"
+              hint="Escreva uma resenha pela página de um jogo do catálogo."
+            />
+          ) : (
+            <ReviewEmpty message="Este jogador ainda não escreveu resenhas" />
+          )
+        ) : (
+          <>
+            <ul data-testid="resenhas-lista" className="flex flex-col gap-3">
+              {page.data.map((review) => (
+                <ReviewItem
+                  key={review.id}
+                  review={review}
+                  showGame
+                  isOwner={isOwner}
+                  onEdit={(item) => navigate(reviewEditorPath(item.game.slug))}
+                  onRemove={(item) => {
+                    setRemoveError(undefined);
+                    setRemoving(item);
+                  }}
+                />
+              ))}
+            </ul>
+
+            <Pagination
+              page={page.meta.page}
+              totalPages={page.meta.totalPages}
+              onPageChange={goToPage}
+            />
+          </>
+        )
+      ) : null}
+
+      {removing ? (
+        <ConfirmDialog
+          title="Remover resenha"
+          message={`Remover a sua resenha de "${removing.game.title}"? Esta ação não pode ser desfeita.`}
+          confirmLabel="Remover"
+          busy={busy}
+          error={removeError}
+          onConfirm={() => void handleRemove()}
+          onCancel={() => {
+            setRemoving(null);
+            setRemoveError(undefined);
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
+
 type ProfileState =
   | { status: 'loading' }
   | { status: 'not-found' }
   | { status: 'error'; message: string }
   | { status: 'ready'; profile: PublicProfile };
 
+/** Aba do perfil (Diário/Resenhas), com `aria-current` na seção ativa. */
+function ProfileTab({
+  active,
+  testId,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  testId: string;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={testId}
+      aria-current={active ? 'page' : undefined}
+      onClick={onClick}
+      className={
+        active
+          ? 'rounded-full border border-foreground/30 bg-accent px-3 py-1 text-sm font-medium'
+          : 'rounded-full border px-3 py-1 text-sm text-muted-foreground transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40'
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
 /** Página de perfil público (seção 3 da SPEC F2): avatar, nome, bio e "membro desde". */
 function PublicProfileView({ username }: { username: string }) {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [state, setState] = useState<ProfileState>({ status: 'loading' });
+
+  const section = searchParams.get('secao') === 'resenhas' ? 'resenhas' : 'diario';
+
+  function selectSection(next: 'diario' | 'resenhas') {
+    setSearchParams(
+      (current) => {
+        const params = new URLSearchParams(current);
+
+        if (next === 'diario') {
+          params.delete('secao');
+        } else {
+          params.set('secao', next);
+        }
+
+        return params;
+      },
+      { replace: true },
+    );
+  }
 
   useEffect(() => {
     let active = true;
@@ -335,26 +565,38 @@ function PublicProfileView({ username }: { username: string }) {
       </header>
 
       <nav aria-label="Seções do perfil" className="flex flex-wrap gap-2">
-        <span
-          data-testid="aba-diario"
-          aria-current="page"
-          className="rounded-full border border-foreground/30 bg-accent px-3 py-1 text-sm font-medium"
+        <ProfileTab
+          active={section === 'diario'}
+          testId="aba-diario"
+          onClick={() => selectSection('diario')}
         >
           Diário
-        </span>
+        </ProfileTab>
 
-        {RESERVED_SECTIONS.map((section) => (
+        <ProfileTab
+          active={section === 'resenhas'}
+          testId="aba-resenhas"
+          onClick={() => selectSection('resenhas')}
+        >
+          Resenhas
+        </ProfileTab>
+
+        {RESERVED_SECTIONS.map((reserved) => (
           <span
-            key={section.label}
-            title={`Chega na funcionalidade ${section.spec}`}
+            key={reserved.label}
+            title={`Chega na funcionalidade ${reserved.spec}`}
             className="rounded-full border px-3 py-1 text-sm text-muted-foreground opacity-70"
           >
-            {section.label} · em breve
+            {reserved.label} · em breve
           </span>
         ))}
       </nav>
 
-      <DiarySection username={profile.username} isOwner={isOwnProfile} />
+      {section === 'resenhas' ? (
+        <ReviewSection username={profile.username} isOwner={isOwnProfile} />
+      ) : (
+        <DiarySection username={profile.username} isOwner={isOwnProfile} />
+      )}
     </main>
   );
 }

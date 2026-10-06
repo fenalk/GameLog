@@ -129,10 +129,14 @@ export const gameListItemSchema = gameSummarySchema.extend({
 
 export type GameListItem = z.infer<typeof gameListItemSchema>;
 
-/** Detalhe do jogo (RN-F3-07): campos da listagem mais descrição, desenvolvedoras e datas. */
+/**
+ * Detalhe do jogo (RN-F3-07): campos da listagem mais descrição, desenvolvedoras e datas.
+ * `reviewCount` (RN-F10-15) é aditivo: conta apenas as resenhas `PUBLISHED` do jogo.
+ */
 export const gameDetailSchema = gameListItemSchema.extend({
   description: z.string().nullable(),
   developers: z.array(gameTaxonomyRefSchema),
+  reviewCount: z.number().int(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 });

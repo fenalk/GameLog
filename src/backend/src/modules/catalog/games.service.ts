@@ -311,10 +311,16 @@ export async function getGameDetail(rawIdentifier: string): Promise<GameDetail> 
     throw apiErrors.notFound('Jogo não encontrado');
   }
 
+  // `reviewCount` (RN-F10-15) conta apenas as resenhas publicadas do jogo.
+  const reviewCount = await prisma.review.count({
+    where: { gameId: game.id, status: 'PUBLISHED' },
+  });
+
   return {
     ...toListItem(game),
     description: game.description,
     developers: sortTaxonomies(game.developers.map((link) => link.developer)).map(toTaxonomyRef),
+    reviewCount,
     createdAt: game.createdAt.toISOString(),
     updatedAt: game.updatedAt.toISOString(),
   };
