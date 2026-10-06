@@ -1,9 +1,10 @@
 // Schema do banco de dados do GameLog (PostgreSQL).
 //
 // Etapa 0 (Fundação): este arquivo define apenas a base da camada de persistência.
-// Os modelos de domínio (jogos, gêneros, plataformas, avaliações, resenhas, listas,
-// seguidores, denúncias etc.) serão criados pelas migrations de cada funcionalidade
-// (F1–F15), a partir das SPECs correspondentes.
+// Etapa 1 (Identidade e acesso — F1): usuários e refresh tokens (SPEC F1).
+// Etapa 1 (Identidade e acesso — F2): campos de perfil do usuário (SPEC F2).
+// Os demais modelos de domínio serão criados pelas migrations de cada funcionalidade
+// (F3–F15), a partir das SPECs correspondentes.
 
 generator client {
   provider = "prisma-client"
@@ -12,4 +13,51 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+/// Papéis de acesso (seção 1 da SPEC F1). O Visitante é a ausência de token.
+enum Role {
+  PLAYER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+/// Conta de usuário (seção 3 da SPEC F1). `username` e `email` são persistidos já
+/// normalizados (minúsculos, sem espaços) e comparados de forma única. Os campos de
+/// perfil são nulos por padrão (RN-F2-02): `displayName` nulo é exibido como o
+/// `username` e `bio`/`avatarUrl` nulos significam "não informado".
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  username      String         @unique @db.VarChar(30)
+  email         String         @unique @db.VarChar(254)
+  passwordHash  String         @map("password_hash") @db.VarChar(255)
+  displayName   String?        @map("display_name") @db.VarChar(50)
+  bio           String?        @db.VarChar(300)
+  avatarUrl     String?        @map("avatar_url") @db.VarChar(500)
+  role          Role           @default(PLAYER)
+  status        UserStatus     @default(ACTIVE)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+/// Sessão de refresh (RN-F1-09): guarda apenas o hash do `jti` do JWT, a expiração e a
+/// revogação. A rotação e a detecção de reuso usam `jtiHash` + `revokedAt` (RN-F1-10).
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  jtiHash   String    @unique @map("jti_hash") @db.Char(64)
+  userId    String    @map("user_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

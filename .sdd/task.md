@@ -61,18 +61,18 @@ Funcionalidades: **F1** (cadastro e login) e **F2** (gerenciamento de perfil).
 Estabelece as personas Visitante, Jogador e Administrador e os papéis de acesso.
 
 ### F1 — Cadastro e login de usuário
-- [ ] `T1.01` Escrever a SPEC de F1
-- [ ] `T1.02` Implementar F1
-- [ ] `T1.03` Testar F1
+- [x] `T1.01` Escrever a SPEC de F1
+- [x] `T1.02` Implementar F1
+- [x] `T1.03` Testar F1
 
 ### F2 — Gerenciamento de perfil
-- [ ] `T1.04` Escrever a SPEC de F2
-- [ ] `T1.05` Implementar F2
-- [ ] `T1.06` Testar F2
+- [x] `T1.04` Escrever a SPEC de F2
+- [x] `T1.05` Implementar F2
+- [x] `T1.06` Testar F2
 
 ### Fundação de acesso (transversal à etapa)
-- [ ] `T1.07` Definir papéis e permissões para Visitante, Jogador e Administrador
-- [ ] `T1.08` Configurar o mecanismo de autenticação e autorização reutilizável pelas demais etapas
+- [x] `T1.07` Definir papéis e permissões para Visitante, Jogador e Administrador
+- [x] `T1.08` Configurar o mecanismo de autenticação e autorização reutilizável pelas demais etapas
 
 ---
 

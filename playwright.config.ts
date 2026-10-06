@@ -1,9 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { resolveTestDatabaseUrl } from './tests/setup/test-database.js';
+
 const isCI = Boolean(process.env.CI);
+// O e2e roda em um banco dedicado (`*_test`), preparado pelo globalSetup; assim as
+// contas criadas pelos testes não sujam o banco de desenvolvimento (ver AUD-03).
+const testDatabaseUrl = resolveTestDatabaseUrl();
 
 export default defineConfig({
   testDir: './tests/e2e',
+  globalSetup: './tests/setup/prepare-database.ts',
+  globalTeardown: './tests/setup/playwright-teardown.ts',
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
@@ -27,6 +34,7 @@ export default defineConfig({
       url: 'http://localhost:3000/api/v1/health',
       reuseExistingServer: !isCI,
       timeout: 120_000,
+      env: { DATABASE_URL: testDatabaseUrl },
     },
     {
       command: 'npm run dev:frontend',
