@@ -1,79 +1,176 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 
-import { fetchHealth } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { MIN_RATINGS_FOR_RANKING, type GameListItem } from '@gamelog/shared';
 
-const STACK = [
-  { label: 'Backend', value: 'Node.js · Fastify · Zod · Prisma' },
-  { label: 'Banco de dados', value: 'PostgreSQL' },
-  { label: 'Frontend', value: 'React · Vite · Tailwind CSS · shadcn/ui' },
-  { label: 'Testes', value: 'Vitest · Supertest · Playwright' },
-] as const;
+import { CatalogEmpty, CatalogError, GameCardSkeletons } from '@/components/catalog-feedback';
+import { GameCard, GameCardGrid } from '@/components/game-card';
+import { fetchGames } from '@/lib/catalog';
+import { useDocumentTitle } from '@/lib/document-title';
+import { formMessageFor } from '@/lib/forms';
 
+const SECTION_SIZE = 6;
+/** Jogos consultados antes de aplicar o mínimo de avaliações do destaque (RN-F3-09). */
+const RANKING_FETCH_SIZE = 20;
+
+function HighlightSection({
+  title,
+  testId,
+  games,
+  isPending,
+  error,
+  isFetching,
+  onRetry,
+  emptyMessage,
+}: {
+  title: string;
+  testId: string;
+  games: GameListItem[] | undefined;
+  isPending: boolean;
+  error: unknown;
+  isFetching: boolean;
+  onRetry: () => void;
+  emptyMessage: string;
+}) {
+  return (
+    <section data-testid={testId} aria-label={title} className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-lg font-medium">{title}</h2>
+        <Link
+          to="/jogos"
+          className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Ver catálogo
+        </Link>
+      </div>
+
+      {isPending ? <GameCardSkeletons count={4} /> : null}
+
+      {!isPending && error ? (
+        <CatalogError message={formMessageFor(error)} onRetry={onRetry} retrying={isFetching} />
+      ) : null}
+
+      {games && games.length === 0 ? <CatalogEmpty message={emptyMessage} /> : null}
+
+      {games && games.length > 0 ? (
+        <GameCardGrid>
+          {games.map((game) => (
+            <li key={game.id}>
+              <GameCard game={game} />
+            </li>
+          ))}
+        </GameCardGrid>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * Home `/` (seção 5 da SPEC F3): busca em destaque e três grades — adicionados
+ * recentemente, mais bem avaliados (RN-F3-09) e mais avaliados.
+ */
 export function HomePage() {
-  const healthQuery = useQuery({
-    queryKey: ['health'],
-    queryFn: fetchHealth,
-    refetchInterval: 10_000,
+  useDocumentTitle('GameLog — catálogo de jogos');
+  const navigate = useNavigate();
+  const [term, setTerm] = useState('');
+
+  const recent = useQuery({
+    queryKey: ['home', 'recently-added'],
+    queryFn: () => fetchGames({ sort: 'recently_added', order: 'desc', pageSize: SECTION_SIZE }),
     retry: 1,
   });
 
-  const status = healthQuery.isSuccess ? 'ok' : healthQuery.isError ? 'offline' : 'loading';
+  const topRated = useQuery({
+    queryKey: ['home', 'top-rated'],
+    queryFn: () => fetchGames({ sort: 'rating', order: 'desc', pageSize: RANKING_FETCH_SIZE }),
+    retry: 1,
+  });
+
+  const popular = useQuery({
+    queryKey: ['home', 'popular'],
+    queryFn: () => fetchGames({ sort: 'popularity', order: 'desc', pageSize: SECTION_SIZE }),
+    retry: 1,
+  });
+
+  const topRatedGames = topRated.data?.data
+    .filter((game) => game.ratingCount >= MIN_RATINGS_FOR_RANKING)
+    .slice(0, SECTION_SIZE);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = term.trim();
+
+    navigate(query.length > 0 ? `/jogos?q=${encodeURIComponent(query)}` : '/jogos');
+  }
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-10 px-6 py-16">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">GameLog</h1>
-        <p className="text-muted-foreground">
-          Etapa 0 — fundação do projeto: frontend React consumindo a API REST do backend Fastify.
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-12">
+      <header className="flex flex-col items-center gap-4 text-center">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">GameLog</h1>
+        <p className="max-w-xl text-muted-foreground">
+          Descubra jogos, acompanhe o que você já jogou e veja a opinião de outros jogadores.
         </p>
+
+        <form
+          role="search"
+          onSubmit={handleSubmit}
+          className="flex w-full max-w-xl items-center gap-2"
+        >
+          <label htmlFor="busca-home" className="sr-only">
+            Buscar jogos
+          </label>
+          <input
+            id="busca-home"
+            name="q"
+            type="search"
+            value={term}
+            onChange={(event) => setTerm(event.target.value)}
+            placeholder="Buscar jogos pelo título"
+            autoComplete="off"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          />
+          <button
+            type="submit"
+            className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground transition-colors outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            Buscar
+          </button>
+        </form>
       </header>
 
-      <section className="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
-        <h2 className="text-lg font-medium">Status da API REST</h2>
+      <HighlightSection
+        title="Adicionados recentemente"
+        testId="destaque-recentes"
+        games={recent.data?.data}
+        isPending={recent.isPending}
+        error={recent.error}
+        isFetching={recent.isFetching}
+        onRetry={() => void recent.refetch()}
+        emptyMessage="O catálogo ainda não tem jogos."
+      />
 
-        <div className="mt-4 flex items-center gap-3">
-          <span
-            aria-hidden
-            className={cn(
-              'size-3 rounded-full',
-              status === 'ok' && 'bg-emerald-500',
-              status === 'offline' && 'bg-destructive',
-              status === 'loading' && 'bg-muted-foreground',
-            )}
-          />
-          <span data-testid="api-status" className="font-mono text-sm">
-            {status === 'ok' ? 'ok' : status === 'offline' ? 'indisponível' : 'verificando...'}
-          </span>
-        </div>
+      <HighlightSection
+        title="Mais bem avaliados"
+        testId="destaque-melhores"
+        games={topRatedGames}
+        isPending={topRated.isPending}
+        error={topRated.error}
+        isFetching={topRated.isFetching}
+        onRetry={() => void topRated.refetch()}
+        emptyMessage="Ainda não há jogos com avaliações suficientes."
+      />
 
-        {healthQuery.data ? (
-          <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <dt>Serviço</dt>
-            <dd className="font-mono">{healthQuery.data.service}</dd>
-            <dt>Tempo de atividade</dt>
-            <dd className="font-mono">{healthQuery.data.uptimeSeconds}s</dd>
-            <dt>Verificado em</dt>
-            <dd className="font-mono">{healthQuery.data.timestamp}</dd>
-          </dl>
-        ) : null}
-
-        {healthQuery.isError ? (
-          <p className="mt-4 text-sm text-destructive">
-            Não foi possível falar com a API REST. Verifique se o backend está rodando (npm run
-            dev:backend) e se o PostgreSQL está no ar (docker compose up -d db).
-          </p>
-        ) : null}
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        {STACK.map((item) => (
-          <div key={item.label} className="rounded-xl border p-4">
-            <h3 className="text-sm font-medium">{item.label}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{item.value}</p>
-          </div>
-        ))}
-      </section>
+      <HighlightSection
+        title="Mais avaliados"
+        testId="destaque-populares"
+        games={popular.data?.data}
+        isPending={popular.isPending}
+        error={popular.error}
+        isFetching={popular.isFetching}
+        onRetry={() => void popular.refetch()}
+        emptyMessage="O catálogo ainda não tem jogos."
+      />
     </main>
   );
 }
