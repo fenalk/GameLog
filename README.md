@@ -12,3 +12,6 @@
 # Ferramentas 
 
 # Modelo
+
+# cloc 
+Contagem de linhas apenas arquivos versionados, sem documentação nem dados. A saída vai no readme.md, com as linhas de teste separadas das demais.
