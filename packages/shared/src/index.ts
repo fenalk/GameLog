@@ -10,4 +10,5 @@ export * from './game-log.js';
 export * from './health.js';
 export * from './platform.js';
 export * from './profile.js';
+export * from './review.js';
 export * from './taxonomy.js';
