@@ -52,6 +52,7 @@ export const ERROR_CODES = {
   developerNameTaken: 'DEVELOPER_NAME_TAKEN',
   developerSlugTaken: 'DEVELOPER_SLUG_TAKEN',
   developerInUse: 'DEVELOPER_IN_USE',
+  listLimitReached: 'LIST_LIMIT_REACHED',
   serviceUnavailable: 'SERVICE_UNAVAILABLE',
 } as const;
 
