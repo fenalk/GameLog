@@ -136,9 +136,9 @@ Forma o histórico pessoal e as opiniões que sustentam as avaliações sociais.
 Funcionalidade: **F11** (criação e gerenciamento de listas).
 
 ### F11 — Criação e gerenciamento de listas
-- [ ] `T4.01` Escrever a SPEC de F11
-- [ ] `T4.02` Implementar F11
-- [ ] `T4.03` Testar F11
+- [x] `T4.01` Escrever a SPEC de F11
+- [x] `T4.02` Implementar F11
+- [x] `T4.03` Testar F11
 
 ---
 
