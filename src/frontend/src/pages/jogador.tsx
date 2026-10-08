@@ -3,6 +3,7 @@ import {
   gameLogStatusLabel,
   publicProfilePath,
   type GameLogEntry,
+  type ListSummary,
   type PublicProfile,
   type ReviewSummary,
 } from '@gamelog/shared';
@@ -12,6 +13,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { DiaryEmpty, DiaryError, DiaryItem, DiarySkeletons } from '@/components/game-log-list';
 import { GameLogFormDialog } from '@/components/game-log-form';
+import { ListCard, ListEmpty, ListError, ListSkeletons } from '@/components/list-card';
 import { ConfirmDialog } from '@/components/modal';
 import { NotFound } from '@/components/not-found';
 import { Pagination } from '@/components/pagination';
@@ -27,6 +29,15 @@ import {
   diaryStateFromSearch,
   fetchPublicDiary,
 } from '@/lib/game-logs';
+import {
+  LIST_SORT_OPTIONS,
+  deleteMyList,
+  fetchMyLists,
+  fetchPublicLists,
+  listEditorPath,
+  listsRequestFromState,
+  listsStateFromSearch,
+} from '@/lib/lists';
 import { formatMemberSince } from '@/lib/profile';
 import {
   REVIEW_SORT_OPTIONS,
@@ -38,11 +49,8 @@ import {
   reviewsStateFromSearch,
 } from '@/lib/reviews';
 
-/** Seções entregues pelas SPECs posteriores (F9 e F11): reservadas, ainda sem conteúdo. */
-const RESERVED_SECTIONS = [
-  { label: 'Avaliações', spec: 'F9' },
-  { label: 'Listas', spec: 'F11' },
-] as const;
+/** Seções entregues pelas SPECs posteriores (F9): reservadas, ainda sem conteúdo. */
+const RESERVED_SECTIONS = [{ label: 'Avaliações', spec: 'F9' }] as const;
 
 /**
  * Aba Diário do perfil (seção 4 da SPEC F8): lista o diário público com filtro por status
@@ -412,6 +420,184 @@ function ReviewSection({ username, isOwner }: { username: string; isOwner: boole
   );
 }
 
+/**
+ * Aba Listas do perfil (seção 4 da SPEC F11): lista as listas do jogador com paginação e
+ * ordenação sincronizadas na URL. Para o dono, usa `GET /me/lists` (inclui as privadas,
+ * com selo de visibilidade) e mostra as ações de editar/excluir; para os demais, usa a
+ * listagem pública (somente `PUBLIC`) em modo leitura.
+ */
+function ListSection({ username, isOwner }: { username: string; isOwner: boolean }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const state = listsStateFromSearch(searchParams, 'l');
+  const request = listsRequestFromState(state);
+
+  const [removing, setRemoving] = useState<ListSummary | null>(null);
+  const [removeError, setRemoveError] = useState<string | undefined>(undefined);
+  const [busy, setBusy] = useState(false);
+
+  const query = useQuery({
+    queryKey: ['lists', 'list', isOwner ? 'mine' : 'public', username, request],
+    queryFn: () => (isOwner ? fetchMyLists(request) : fetchPublicLists(username, request)),
+    placeholderData: keepPreviousData,
+    retry: 1,
+  });
+
+  const updateParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      setSearchParams(
+        (current) => {
+          const params = new URLSearchParams(current);
+          mutate(params);
+          return params;
+        },
+        { replace: true, flushSync: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  function selectSort(value: string) {
+    updateParams((params) => {
+      if (value === 'recently_updated') {
+        params.delete('lsort');
+      } else {
+        params.set('lsort', value);
+      }
+
+      params.delete('lpage');
+    });
+  }
+
+  function goToPage(page: number) {
+    updateParams((params) => {
+      if (page > 1) {
+        params.set('lpage', String(page));
+      } else {
+        params.delete('lpage');
+      }
+    });
+  }
+
+  async function handleRemove() {
+    if (!removing) {
+      return;
+    }
+
+    setBusy(true);
+    setRemoveError(undefined);
+
+    try {
+      await deleteMyList(removing.id);
+      setRemoving(null);
+      void queryClient.invalidateQueries({ queryKey: ['lists'] });
+    } catch (error) {
+      setRemoveError(formMessageFor(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const page = query.data;
+
+  return (
+    <section data-testid="listas-secao" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-medium">Listas</h2>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {isOwner ? (
+            <Link
+              to={listEditorPath()}
+              data-testid="listas-nova"
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              Nova lista
+            </Link>
+          ) : null}
+
+          <label htmlFor="ordem-listas-perfil" className="text-sm font-medium">
+            Ordenar
+          </label>
+          <select
+            id="ordem-listas-perfil"
+            name="lsort"
+            value={state.sort || 'recently_updated'}
+            onChange={(event) => selectSort(event.target.value)}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            {LIST_SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {query.isPending ? <ListSkeletons /> : null}
+
+      {query.isError ? (
+        <ListError
+          message={formMessageFor(query.error)}
+          onRetry={() => void query.refetch()}
+          retrying={query.isFetching}
+        />
+      ) : null}
+
+      {page ? (
+        page.data.length === 0 ? (
+          <ListEmpty
+            message={
+              isOwner ? 'Você ainda não criou listas' : 'Este jogador ainda não criou listas'
+            }
+            {...(isOwner ? { hint: 'Crie uma lista para organizar seus jogos.' } : {})}
+          />
+        ) : (
+          <>
+            <ul data-testid="listas-lista" className="flex flex-col gap-3">
+              {page.data.map((list) => (
+                <ListCard
+                  key={list.id}
+                  list={list}
+                  isOwner={isOwner}
+                  onEdit={(item) => navigate(listEditorPath(item.id))}
+                  onRemove={(item) => {
+                    setRemoveError(undefined);
+                    setRemoving(item);
+                  }}
+                />
+              ))}
+            </ul>
+
+            <Pagination
+              page={page.meta.page}
+              totalPages={page.meta.totalPages}
+              onPageChange={goToPage}
+            />
+          </>
+        )
+      ) : null}
+
+      {removing ? (
+        <ConfirmDialog
+          title="Excluir lista"
+          message={`Excluir a lista "${removing.title}"? Esta ação não pode ser desfeita.`}
+          confirmLabel="Excluir"
+          busy={busy}
+          error={removeError}
+          onConfirm={() => void handleRemove()}
+          onCancel={() => {
+            setRemoving(null);
+            setRemoveError(undefined);
+          }}
+        />
+      ) : null}
+    </section>
+  );
+}
+
 type ProfileState =
   | { status: 'loading' }
   | { status: 'not-found' }
@@ -453,9 +639,11 @@ function PublicProfileView({ username }: { username: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, setState] = useState<ProfileState>({ status: 'loading' });
 
-  const section = searchParams.get('secao') === 'resenhas' ? 'resenhas' : 'diario';
+  const sectionParam = searchParams.get('secao');
+  const section =
+    sectionParam === 'resenhas' ? 'resenhas' : sectionParam === 'listas' ? 'listas' : 'diario';
 
-  function selectSection(next: 'diario' | 'resenhas') {
+  function selectSection(next: 'diario' | 'resenhas' | 'listas') {
     setSearchParams(
       (current) => {
         const params = new URLSearchParams(current);
@@ -581,6 +769,14 @@ function PublicProfileView({ username }: { username: string }) {
           Resenhas
         </ProfileTab>
 
+        <ProfileTab
+          active={section === 'listas'}
+          testId="aba-listas"
+          onClick={() => selectSection('listas')}
+        >
+          Listas
+        </ProfileTab>
+
         {RESERVED_SECTIONS.map((reserved) => (
           <span
             key={reserved.label}
@@ -594,6 +790,8 @@ function PublicProfileView({ username }: { username: string }) {
 
       {section === 'resenhas' ? (
         <ReviewSection username={profile.username} isOwner={isOwnProfile} />
+      ) : section === 'listas' ? (
+        <ListSection username={profile.username} isOwner={isOwnProfile} />
       ) : (
         <DiarySection username={profile.username} isOwner={isOwnProfile} />
       )}

@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useCallback, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
+import { AddToListDialog } from '@/components/add-to-list-dialog';
 import { CatalogError } from '@/components/catalog-feedback';
 import { GameLogCard } from '@/components/game-log-card';
 import { GameLogFormDialog } from '@/components/game-log-form';
@@ -28,11 +29,8 @@ import {
   reviewsStateFromSearch,
 } from '@/lib/reviews';
 
-/** Ações do jogador entregues pelas SPECs posteriores (F9 e F11), ainda sem conteúdo. */
-const RESERVED_ACTIONS = [
-  { label: 'Avaliar', spec: 'F9' },
-  { label: 'Adicionar a lista', spec: 'F11' },
-] as const;
+/** Ações do jogador entregues pelas SPECs posteriores (F9), ainda sem conteúdo. */
+const RESERVED_ACTIONS = [{ label: 'Avaliar', spec: 'F9' }] as const;
 
 function GameTaxonomyLink({ slug, name, param }: { slug: string; name: string; param: string }) {
   return (
@@ -64,6 +62,7 @@ export function JogoPage() {
   const [confirmingReview, setConfirmingReview] = useState(false);
   const [removingReview, setRemovingReview] = useState(false);
   const [reviewActionError, setReviewActionError] = useState<string | null>(null);
+  const [listDialogOpen, setListDialogOpen] = useState(false);
 
   const reviewsState = reviewsStateFromSearch(searchParams);
   const reviewsRequest = reviewsRequestFromState(reviewsState);
@@ -452,10 +451,29 @@ export function JogoPage() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Avaliação e listas chegam nas próximas funcionalidades.
+          A avaliação chega na próxima funcionalidade.
         </p>
 
         <div className="flex flex-wrap gap-2">
+          {authStatus === 'authenticated' ? (
+            <button
+              type="button"
+              data-testid="lista-adicionar"
+              onClick={() => setListDialogOpen(true)}
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              Adicionar a lista
+            </button>
+          ) : (
+            <Link
+              to={`/entrar?returnTo=${encodeURIComponent(returnTo)}`}
+              data-testid="lista-adicionar"
+              className="rounded-md border px-3 py-1.5 text-sm transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              Adicionar a lista
+            </Link>
+          )}
+
           {RESERVED_ACTIONS.map((action) =>
             authStatus === 'authenticated' ? (
               <button
@@ -556,6 +574,13 @@ export function JogoPage() {
           platforms={game.platforms}
           onClose={() => setFormOpen(false)}
           onSaved={handleSaved}
+        />
+      ) : null}
+
+      {listDialogOpen ? (
+        <AddToListDialog
+          game={{ slug: game.slug, title: game.title }}
+          onClose={() => setListDialogOpen(false)}
         />
       ) : null}
 
