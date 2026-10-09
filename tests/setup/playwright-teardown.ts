@@ -18,6 +18,7 @@ export default async function cleanupE2eData(): Promise<void> {
   });
 
   try {
+    await prisma.follow.deleteMany();
     await prisma.game.deleteMany();
     await prisma.genre.deleteMany();
     await prisma.platform.deleteMany();

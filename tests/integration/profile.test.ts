@@ -90,12 +90,16 @@ describe('SPEC F2 — gerenciamento de perfil (API REST)', () => {
 
       expect(response.status).toBe(200);
       expect(publicProfileSchema.safeParse(response.body).success).toBe(true);
+      // Os campos sociais são aditivos ao contrato da F2 (RN-F2-09/RN-F12-06).
       expect(response.body).toEqual({
         username: 'jogador_01',
         displayName: 'jogador_01',
         bio: null,
         avatarUrl: null,
         createdAt: expect.any(String),
+        followersCount: 0,
+        followingCount: 0,
+        isFollowedByMe: false,
       });
       expect(response.body).not.toHaveProperty('email');
       expect(response.body).not.toHaveProperty('role');
