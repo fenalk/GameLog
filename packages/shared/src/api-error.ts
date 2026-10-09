@@ -53,6 +53,8 @@ export const ERROR_CODES = {
   developerSlugTaken: 'DEVELOPER_SLUG_TAKEN',
   developerInUse: 'DEVELOPER_IN_USE',
   listLimitReached: 'LIST_LIMIT_REACHED',
+  cannotFollowSelf: 'CANNOT_FOLLOW_SELF',
+  followLimitReached: 'FOLLOW_LIMIT_REACHED',
   serviceUnavailable: 'SERVICE_UNAVAILABLE',
 } as const;
 
