@@ -86,6 +86,16 @@ export const apiErrors = {
     return new ApiException(409, ERROR_CODES.listLimitReached, message);
   },
 
+  /** Autosseguimento não é permitido (RN-F12-02). */
+  cannotFollowSelf(): ApiException {
+    return new ApiException(409, ERROR_CODES.cannotFollowSelf, 'Você não pode seguir a si mesmo.');
+  },
+
+  /** Limite de contas seguidas por usuário atingido (RN-F12-05). */
+  followLimitReached(message = 'Limite de seguidos atingido'): ApiException {
+    return new ApiException(409, ERROR_CODES.followLimitReached, message);
+  },
+
   /** O último administrador ativo não pode excluir a própria conta (RN-F2-07). */
   lastAdmin(): ApiException {
     return new ApiException(

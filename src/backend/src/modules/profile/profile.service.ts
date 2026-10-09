@@ -13,6 +13,7 @@ import { hashPassword, verifyPassword } from '../../lib/password.js';
 import { prisma } from '../../lib/prisma.js';
 import { isUniqueViolation } from '../../lib/prisma-errors.js';
 import { issueSession } from '../auth/auth.service.js';
+import { followCountsFor, isFollowing } from '../follows/follows.service.js';
 
 /** Campos que compõem o perfil; o hash de senha nunca é selecionado (RN-F2-01). */
 const PROFILE_SELECT = {
@@ -28,7 +29,25 @@ const PROFILE_SELECT = {
 
 type ProfileRecord = Pick<User, keyof typeof PROFILE_SELECT>;
 
-function toPublicProfile(user: ProfileRecord): PublicProfile {
+type FollowState = { followersCount: number; followingCount: number; isFollowedByMe: boolean };
+
+/**
+ * Campos sociais da F12 (RN-F12-06), aditivos ao contrato da F2: contadores derivados na
+ * leitura e o vínculo do solicitante — `false` para visitante, para o próprio perfil e
+ * quando não existe vínculo.
+ */
+async function followStateFor(user: ProfileRecord, viewerId: string | null): Promise<FollowState> {
+  const { followersCount, followingCount } = await followCountsFor(user.id);
+  const isFollowedByMe =
+    viewerId !== null && viewerId !== user.id ? await isFollowing(viewerId, user.id) : false;
+
+  return { followersCount, followingCount, isFollowedByMe };
+}
+
+async function toPublicProfile(
+  user: ProfileRecord,
+  viewerId: string | null,
+): Promise<PublicProfile> {
   return {
     username: user.username,
     // RN-F2-02: `displayName` nulo é exibido como o `username` (padrão).
@@ -36,11 +55,17 @@ function toPublicProfile(user: ProfileRecord): PublicProfile {
     bio: user.bio,
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt.toISOString(),
+    ...(await followStateFor(user, viewerId)),
   };
 }
 
-function toOwnProfile(user: ProfileRecord): OwnProfile {
-  return { id: user.id, email: user.email, role: user.role, ...toPublicProfile(user) };
+async function toOwnProfile(user: ProfileRecord): Promise<OwnProfile> {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    ...(await toPublicProfile(user, null)),
+  };
 }
 
 async function findUserOrFail(userId: string): Promise<User> {
@@ -64,9 +89,13 @@ async function assertCurrentPassword(user: User, password: string): Promise<void
 
 /**
  * Perfil público (RN-F2-01): a busca normaliza a entrada (`trim` + minúsculas), o que a
- * torna insensível a maiúsculas/minúsculas sobre o `username` persistido (CA-F2-02).
+ * torna insensível a maiúsculas/minúsculas sobre o `username` persistido (CA-F2-02). Os
+ * campos sociais são calculados para o solicitante, quando houver sessão (RN-F12-06).
  */
-export async function getPublicProfileByUsername(rawUsername: string): Promise<PublicProfile> {
+export async function getPublicProfileByUsername(
+  rawUsername: string,
+  viewerId: string | null,
+): Promise<PublicProfile> {
   const username = rawUsername.trim().toLowerCase();
 
   const user = await prisma.user.findUnique({ where: { username }, select: PROFILE_SELECT });
@@ -75,7 +104,7 @@ export async function getPublicProfileByUsername(rawUsername: string): Promise<P
     throw apiErrors.notFound('Perfil não encontrado');
   }
 
-  return toPublicProfile(user);
+  return toPublicProfile(user, viewerId);
 }
 
 /** Perfil próprio (seção 2 da SPEC F2): inclui `email` e `role`. */
