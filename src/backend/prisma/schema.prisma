@@ -9,6 +9,7 @@
 // Etapa 3 (Atividade do jogador — F8): diário de jogos jogados (SPEC F8, seção 1).
 // Etapa 3 (Atividade do jogador — F10): resenhas (SPEC F10, seção 1).
 // Etapa 4 (Listas — F11): listas de jogos e seus itens (SPEC F11, seção 1).
+// Etapa 5 (Social — F12): seguimento entre jogadores (SPEC F12, seção 1).
 
 generator client {
   provider = "prisma-client"
@@ -75,6 +76,8 @@ model User {
   gameLogs      GameLog[]
   reviews       Review[]
   gameLists     GameList[]
+  following     Follow[]       @relation("FollowFollower")
+  followers     Follow[]       @relation("FollowFollowing")
 
   @@map("users")
 }
@@ -280,4 +283,22 @@ model GameListItem {
   @@unique([listId, gameId])
   @@index([listId, position])
   @@map("game_list_items")
+}
+
+/// Seguimento entre jogadores (seção 1 da SPEC F12): relação direcionada e pública, em que
+/// `follower` segue `following`. O par é único (`UNIQUE (follower_id, following_id)`) e o
+/// autosseguimento é barrado pelo `CHECK (follower_id <> following_id)` da migration; os
+/// contadores do perfil são derivados na leitura, sem coluna desnormalizada (RN-F12-06).
+model Follow {
+  id          String   @id @default(uuid()) @db.Uuid
+  followerId  String   @map("follower_id") @db.Uuid
+  followingId String   @map("following_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  follower    User     @relation("FollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("FollowFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId, createdAt])
+  @@index([followerId, createdAt])
+  @@map("follows")
 }
