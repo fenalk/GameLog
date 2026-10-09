@@ -13,6 +13,8 @@ import { EntrarPage } from '@/pages/entrar';
 import { HomePage } from '@/pages/home';
 import { JogadorPage } from '@/pages/jogador';
 import { JogoPage } from '@/pages/jogo';
+import { ListaPage } from '@/pages/lista';
+import { ListaEditorPage } from '@/pages/lista-editor';
 import { ReviewEditorPage } from '@/pages/review-editor';
 import { ReviewPage } from '@/pages/review';
 
@@ -22,7 +24,8 @@ import { ReviewPage } from '@/pages/review';
  * é o perfil público (SPEC F2); `/jogos` e `/jogos/:slug` são o catálogo e o detalhe do
  * jogo (SPEC F3), públicos e sem exigir autenticação. `/admin/generos`,
  * `/admin/plataformas` e `/admin/desenvolvedoras` são as telas de administração (SPECs
- * F5, F6 e F7), exclusivas de `ADMIN`.
+ * F5, F6 e F7), exclusivas de `ADMIN`. `/listas/:id` é o permalink de uma lista e
+ * `/listas/nova` e `/listas/:id/editar` são o editor (SPEC F11), protegidos por sessão.
  */
 export const router = createBrowserRouter([
   {
@@ -52,6 +55,26 @@ export const router = createBrowserRouter([
       {
         path: 'resenhas/:id',
         element: <ReviewPage />,
+      },
+      {
+        path: 'listas/nova',
+        element: (
+          <RequireAuth>
+            <ListaEditorPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'listas/:id',
+        element: <ListaPage />,
+      },
+      {
+        path: 'listas/:id/editar',
+        element: (
+          <RequireAuth>
+            <ListaEditorPage />
+          </RequireAuth>
+        ),
       },
       {
         path: 'cadastro',

@@ -8,6 +8,7 @@
 // respectivas funcionalidades.
 // Etapa 3 (Atividade do jogador — F8): diário de jogos jogados (SPEC F8, seção 1).
 // Etapa 3 (Atividade do jogador — F10): resenhas (SPEC F10, seção 1).
+// Etapa 4 (Listas — F11): listas de jogos e seus itens (SPEC F11, seção 1).
 
 generator client {
   provider = "prisma-client"
@@ -47,6 +48,13 @@ enum ReviewStatus {
   REMOVED
 }
 
+/// Visibilidade da lista (seção 1 da SPEC F11). `PUBLIC` é lida por qualquer pessoa;
+/// `PRIVATE` só pelo dono autenticado (RN-F11-05).
+enum ListVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 /// Conta de usuário (seção 3 da SPEC F1). `username` e `email` são persistidos já
 /// normalizados (minúsculos, sem espaços) e comparados de forma única. Os campos de
 /// perfil são nulos por padrão (RN-F2-02): `displayName` nulo é exibido como o
@@ -66,6 +74,7 @@ model User {
   refreshTokens RefreshToken[]
   gameLogs      GameLog[]
   reviews       Review[]
+  gameLists     GameList[]
 
   @@map("users")
 }
@@ -104,6 +113,7 @@ model Game {
   developers    GameDeveloper[]
   gameLogs      GameLog[]
   reviews       Review[]
+  listItems     GameListItem[]
 
   @@map("games")
 }
@@ -232,4 +242,42 @@ model Review {
   @@index([userId, createdAt])
   @@index([status])
   @@map("reviews")
+}
+
+/// Lista de jogos criada pelo jogador (seção 1 da SPEC F11): reúne jogos sob um critério
+/// próprio, com ordem manual e visibilidade própria. Não há unicidade de título (títulos
+/// iguais geram listas distintas) e a exclusão da conta (RN-F11-18) remove as listas.
+model GameList {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @map("user_id") @db.Uuid
+  title       String         @db.VarChar(80)
+  description String?        @db.VarChar(500)
+  visibility  ListVisibility @default(PUBLIC)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       GameListItem[]
+
+  @@index([userId, updatedAt])
+  @@index([visibility])
+  @@map("game_lists")
+}
+
+/// Item de uma lista (seção 1 da SPEC F11): um jogo aparece no máximo uma vez por lista
+/// (`UNIQUE (list_id, game_id)`), com posição densa mantida pelo serviço e nota opcional.
+/// Excluir o jogo (F4) remove os itens vinculados sem remover as listas (RN-F11-18).
+model GameListItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  listId    String   @map("list_id") @db.Uuid
+  gameId    String   @map("game_id") @db.Uuid
+  position  Int
+  note      String?  @db.VarChar(280)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  list      GameList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, gameId])
+  @@index([listId, position])
+  @@map("game_list_items")
 }

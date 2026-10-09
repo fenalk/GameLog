@@ -81,6 +81,11 @@ export const apiErrors = {
     return new ApiException(400, ERROR_CODES.invalidCurrentPassword, 'Senha atual incorreta.');
   },
 
+  /** Limite de listas por usuário ou de itens por lista atingido (RN-F11-15). */
+  listLimitReached(message = 'Limite de listas atingido'): ApiException {
+    return new ApiException(409, ERROR_CODES.listLimitReached, message);
+  },
+
   /** O último administrador ativo não pode excluir a própria conta (RN-F2-07). */
   lastAdmin(): ApiException {
     return new ApiException(

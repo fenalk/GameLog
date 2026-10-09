@@ -8,6 +8,7 @@ export * from './developer.js';
 export * from './genre.js';
 export * from './game-log.js';
 export * from './health.js';
+export * from './list.js';
 export * from './platform.js';
 export * from './profile.js';
 export * from './review.js';
