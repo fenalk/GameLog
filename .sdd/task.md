@@ -147,9 +147,9 @@ Funcionalidade: **F11** (criação e gerenciamento de listas).
 Funcionalidades: **F12** (seguir jogadores) e **F13** (recomendações).
 
 ### F12 — Seguimento de outros jogadores
-- [ ] `T5.01` Escrever a SPEC de F12
-- [ ] `T5.02` Implementar F12
-- [ ] `T5.03` Testar F12
+- [x] `T5.01` Escrever a SPEC de F12
+- [x] `T5.02` Implementar F12
+- [x] `T5.03` Testar F12
 
 ### F13 — Sistema de recomendações
 - [ ] `T5.04` Escrever a SPEC de F13
