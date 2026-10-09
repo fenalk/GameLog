@@ -87,7 +87,7 @@ export const profileRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['profile'],
         summary: 'Perfil público de um jogador',
         description:
-          'Retorna username, displayName, bio, avatarUrl e createdAt. Nunca expõe e-mail, papel ou hash de senha. A busca ignora maiúsculas/minúsculas.',
+          'Retorna username, displayName, bio, avatarUrl, createdAt e os campos sociais da F12 (followersCount, followingCount e isFollowedByMe, calculado para o solicitante quando há sessão). Nunca expõe e-mail, papel ou hash de senha. A busca ignora maiúsculas/minúsculas.',
         params: profileUsernameParamsSchema,
         response: {
           200: publicProfileSchema,
@@ -97,7 +97,10 @@ export const profileRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (request, reply) => {
-      const profile = await getPublicProfileByUsername(request.params.username);
+      const profile = await getPublicProfileByUsername(
+        request.params.username,
+        request.user?.id ?? null,
+      );
 
       return reply.send(profile);
     },

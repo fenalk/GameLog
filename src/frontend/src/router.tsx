@@ -17,11 +17,14 @@ import { ListaPage } from '@/pages/lista';
 import { ListaEditorPage } from '@/pages/lista-editor';
 import { ReviewEditorPage } from '@/pages/review-editor';
 import { ReviewPage } from '@/pages/review';
+import { SeguidoresPage, SeguindoPage } from '@/pages/seguidores';
 
 /**
  * Rotas da aplicação. `/conta` é protegida: o visitante é enviado para
  * `/entrar?returnTo=<rota>` e volta à rota original após o login. `/jogadores/:username`
- * é o perfil público (SPEC F2); `/jogos` e `/jogos/:slug` são o catálogo e o detalhe do
+ * é o perfil público (SPEC F2); `/jogadores/:username/seguidores` e
+ * `/jogadores/:username/seguindo` são as listas públicas de seguidores e seguindo (SPEC
+ * F12); `/jogos` e `/jogos/:slug` são o catálogo e o detalhe do
  * jogo (SPEC F3), públicos e sem exigir autenticação. `/admin/generos`,
  * `/admin/plataformas` e `/admin/desenvolvedoras` são as telas de administração (SPECs
  * F5, F6 e F7), exclusivas de `ADMIN`. `/listas/:id` é o permalink de uma lista e
@@ -95,6 +98,14 @@ export const router = createBrowserRouter([
       {
         path: 'jogadores/:username',
         element: <JogadorPage />,
+      },
+      {
+        path: 'jogadores/:username/seguidores',
+        element: <SeguidoresPage />,
+      },
+      {
+        path: 'jogadores/:username/seguindo',
+        element: <SeguindoPage />,
       },
       {
         path: 'admin/generos',

@@ -2,6 +2,7 @@ import {
   GAME_LOG_STATUSES,
   gameLogStatusLabel,
   publicProfilePath,
+  type FollowState,
   type GameLogEntry,
   type ListSummary,
   type PublicProfile,
@@ -11,6 +12,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
+import { FollowButton } from '@/components/follow-button';
 import { DiaryEmpty, DiaryError, DiaryItem, DiarySkeletons } from '@/components/game-log-list';
 import { GameLogFormDialog } from '@/components/game-log-form';
 import { ListCard, ListEmpty, ListError, ListSkeletons } from '@/components/list-card';
@@ -20,8 +22,9 @@ import { Pagination } from '@/components/pagination';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import { ReviewEmpty, ReviewError, ReviewItem, ReviewSkeletons } from '@/components/review-list';
 import { ApiError, apiRequest } from '@/lib/api';
-import { useAuth } from '@/lib/auth-store';
+import { authorizedRequest, getAuthState, useAuth } from '@/lib/auth-store';
 import { fetchGameDetail } from '@/lib/catalog';
+import { followListPagePath } from '@/lib/follows';
 import { formMessageFor } from '@/lib/forms';
 import {
   deleteMyGameLog,
@@ -638,6 +641,8 @@ function PublicProfileView({ username }: { username: string }) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [state, setState] = useState<ProfileState>({ status: 'loading' });
+  // Cada incremento recarrega o perfil — usado depois de deixar de seguir (RN-F12-04).
+  const [reloadKey, setReloadKey] = useState(0);
 
   const sectionParam = searchParams.get('secao');
   const section =
@@ -662,8 +667,14 @@ function PublicProfileView({ username }: { username: string }) {
 
   useEffect(() => {
     let active = true;
+    const path = publicProfilePath(username);
 
-    apiRequest<PublicProfile>(publicProfilePath(username))
+    // Com sessão o token é enviado para que o perfil traga `isFollowedByMe` (RN-F12-06).
+    const loading = getAuthState().accessToken
+      ? authorizedRequest<PublicProfile>(path)
+      : apiRequest<PublicProfile>(path);
+
+    loading
       .then((profile) => {
         if (active) {
           setState({ status: 'ready', profile });
@@ -684,7 +695,28 @@ function PublicProfileView({ username }: { username: string }) {
     return () => {
       active = false;
     };
-  }, [username]);
+  }, [username, user?.username, reloadKey]);
+
+  /** Atualiza o cabeçalho com o estado devolvido pelo `PUT /me/following/:username`. */
+  function applyFollowState(next: FollowState) {
+    setState((current) =>
+      current.status === 'ready'
+        ? {
+            status: 'ready',
+            profile: {
+              ...current.profile,
+              followersCount: next.followersCount,
+              followingCount: next.followingCount,
+              isFollowedByMe: next.isFollowedByMe,
+            },
+          }
+        : current,
+    );
+  }
+
+  function reloadProfile() {
+    setReloadKey((key) => key + 1);
+  }
 
   if (state.status === 'not-found') {
     return <NotFound message="Perfil não encontrado" />;
@@ -737,7 +769,16 @@ function PublicProfileView({ username }: { username: string }) {
               >
                 Editar perfil
               </Link>
-            ) : null}
+            ) : (
+              <FollowButton
+                username={profile.username}
+                displayName={profile.displayName}
+                isFollowing={profile.isFollowedByMe}
+                returnTo={`/jogadores/${encodeURIComponent(profile.username)}`}
+                onFollowed={applyFollowState}
+                onUnfollowed={reloadProfile}
+              />
+            )}
           </div>
 
           {profile.bio ? (
@@ -749,6 +790,25 @@ function PublicProfileView({ username }: { username: string }) {
           <p className="text-sm text-muted-foreground">
             Membro desde {formatMemberSince(profile.createdAt)}
           </p>
+
+          <nav aria-label="Seguidores e seguindo" className="flex flex-wrap gap-4 text-sm">
+            <Link
+              to={followListPagePath('followers', profile.username)}
+              data-testid="perfil-seguidores"
+              className="text-muted-foreground underline-offset-4 hover:underline"
+            >
+              <strong className="text-foreground">{profile.followersCount}</strong>{' '}
+              {profile.followersCount === 1 ? 'seguidor' : 'seguidores'}
+            </Link>
+
+            <Link
+              to={followListPagePath('following', profile.username)}
+              data-testid="perfil-seguindo"
+              className="text-muted-foreground underline-offset-4 hover:underline"
+            >
+              <strong className="text-foreground">{profile.followingCount}</strong> seguindo
+            </Link>
+          </nav>
         </div>
       </header>
 

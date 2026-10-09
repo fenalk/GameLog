@@ -99,7 +99,9 @@ export type AccountDeleteInput = z.infer<typeof accountDeleteSchema>;
 
 /**
  * Perfil público (RN-F2-01): e-mail, papel e hash de senha nunca aparecem. Contrato
- * extensível — SPECs posteriores acrescentam campos de forma aditiva (RN-F2-09).
+ * extensível — SPECs posteriores acrescentam campos de forma aditiva (RN-F2-09). A F12
+ * (RN-F12-06) acrescenta `followersCount`, `followingCount` e `isFollowedByMe`; o último é
+ * `false` para visitante, para o próprio perfil e quando não há vínculo.
  */
 export const publicProfileSchema = z.object({
   username: z.string(),
@@ -107,6 +109,9 @@ export const publicProfileSchema = z.object({
   bio: z.string().nullable(),
   avatarUrl: z.string().nullable(),
   createdAt: z.iso.datetime(),
+  followersCount: z.number().int(),
+  followingCount: z.number().int(),
+  isFollowedByMe: z.boolean(),
 });
 
 export type PublicProfile = z.infer<typeof publicProfileSchema>;
